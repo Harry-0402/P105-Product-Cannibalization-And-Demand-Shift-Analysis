@@ -1,0 +1,12 @@
+The Project Requirements of "Product Cannibalization \& Demand Shift Analysis" are as follows:
+
+&#x20;
+
+\# Technical Requirements
+
+&#x20;1) Python for Data Preparation and EDA
+
+&#x20;2) Power BI for Data Visualization
+
+&#x20;3) GitHub for Cloud 
+
