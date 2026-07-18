@@ -762,7 +762,8 @@ document.querySelectorAll('.header-btn').forEach(btn => {
             e.preventDefault();
             docModal.classList.add('active');
             if (!docIframe.src || !docIframe.src.includes('docs.google.com')) {
-                docIframe.src = baseUrl + "BRD_Product_Cannibalization_Analysis.docx" + endUrl;
+                const cacheBuster = "%3Fv%3D" + new Date().getTime();
+                docIframe.src = baseUrl + "BRD_Product_Cannibalization_Analysis.docx" + cacheBuster + endUrl;
             }
         });
     }
@@ -788,7 +789,8 @@ docBtns.forEach(btn => {
         docBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const docName = btn.getAttribute('data-doc');
-        docIframe.src = baseUrl + docName + endUrl;
+        const cacheBuster = "%3Fv%3D" + new Date().getTime();
+        docIframe.src = baseUrl + docName + cacheBuster + endUrl;
         if (docDownloadBtn) {
             docDownloadBtn.href = rawBaseUrl + docName;
         }
@@ -800,8 +802,12 @@ const docRefreshBtn = document.getElementById('docRefreshBtn');
 if (docRefreshBtn) {
     docRefreshBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        const currentSrc = docIframe.src;
         docIframe.src = '';
-        setTimeout(() => { docIframe.src = currentSrc; }, 100);
+        setTimeout(() => { 
+            const activeBtn = document.querySelector('.doc-btn.active') || document.querySelector('.doc-btn');
+            const docName = activeBtn.getAttribute('data-doc');
+            const cacheBuster = "%3Fv%3D" + new Date().getTime();
+            docIframe.src = baseUrl + docName + cacheBuster + endUrl;
+        }, 100);
     });
 }
