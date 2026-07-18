@@ -744,3 +744,48 @@ initTheme();
 initSlicers();
 renderPage('executive');
 
+// ═══════════════════════════════════════════════════════════════════════
+// DOCUMENT PREVIEW MODAL LOGIC
+// ═══════════════════════════════════════════════════════════════════════
+
+const docModal = document.getElementById('docModal');
+const docModalClose = document.getElementById('docModalClose');
+const docIframe = document.getElementById('docIframe');
+const docBtns = document.querySelectorAll('.doc-btn');
+const baseUrl = "https://docs.google.com/gview?url=https://raw.githubusercontent.com/Harry-0402/P105-Product-Cannibalization-/main/";
+const endUrl = "&embedded=true";
+
+// Intercept clicks on "Documents" header buttons
+document.querySelectorAll('.header-btn').forEach(btn => {
+    if (btn.innerText.includes('Documents')) {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            docModal.classList.add('active');
+            if (!docIframe.src || docIframe.src === window.location.href) {
+                docIframe.src = baseUrl + "BRD_Product_Cannibalization_Analysis.docx" + endUrl;
+            }
+        });
+    }
+});
+
+docModalClose.addEventListener('click', () => {
+    docModal.classList.remove('active');
+});
+
+// Close when clicking outside modal content
+window.addEventListener('click', (e) => {
+    if (e.target === docModal) {
+        docModal.classList.remove('active');
+    }
+});
+
+// Document switcher
+docBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        docBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const docName = btn.getAttribute('data-doc');
+        docIframe.src = baseUrl + docName + endUrl;
+    });
+});
+
