@@ -1645,51 +1645,188 @@ function renderRecommendations() {
 // SLICER / FILTERS LOGIC
 // ═══════════════════════════════════════════════════════════════════════
 
-function initSlicers() {
-    const catSelect = document.getElementById('filter-category');
-    if (catSelect && D.categories) {
-        catSelect.querySelectorAll('option:not([value="All"])').forEach(o => o.remove());
-        D.categories.forEach(c => {
-            catSelect.insertAdjacentHTML('beforeend', `<option value="${c.category}">${c.category}</option>`);
-        });
-    }
+// ═══════════════════════════════════════════════════════════════════════
+// MULTI-SELECT SLICER ENGINE
+// ═══════════════════════════════════════════════════════════════════════
 
-    const groupSelect = document.getElementById('filter-group');
-    if (groupSelect && D.group_trends) {
-        groupSelect.querySelectorAll('option:not([value="All"])').forEach(o => o.remove());
-        Object.keys(D.group_trends).forEach(g => {
-            groupSelect.insertAdjacentHTML('beforeend', `<option value="${g}">${g}</option>`);
-        });
-    }
+window.multiSelectState = {
+    'filter-date': new Set(['All']),
+    'filter-category': new Set(['All']),
+    'filter-group': new Set(['All']),
+    'filter-product': new Set(['All']),
+    'filter-status': new Set(['All']),
+    'filter-segment': new Set(['All']),
+    'filter-price': new Set(['All']),
+    'filter-region': new Set(['All'])
+};
 
-    updateProductOptions();
+function getSlicerOptions(id) {
+    if (id === 'filter-date') return ['2023', '2024'];
+    if (id === 'filter-category') return (D.categories || []).map(c => c.category);
+    if (id === 'filter-group') return Object.keys(D.group_trends || {});
+    if (id === 'filter-product') {
+        const catSet = window.multiSelectState['filter-category'] || new Set(['All']);
+        const groupSet = window.multiSelectState['filter-group'] || new Set(['All']);
+        const statusSet = window.multiSelectState['filter-status'] || new Set(['All']);
 
-    const regSelect = document.getElementById('filter-region');
-    if (regSelect && D.regions) {
-        regSelect.querySelectorAll('option:not([value="All"])').forEach(o => o.remove());
-        D.regions.forEach(r => {
-            regSelect.insertAdjacentHTML('beforeend', `<option value="${r.Region}">${r.Region}</option>`);
-        });
-    }
-
-    // Toggle Visibility
-    const toggle = document.getElementById('slicerToggle');
-    const section = document.getElementById('slicerSection');
-    if (toggle && section) {
-        toggle.addEventListener('click', () => {
-            section.classList.toggle('open');
-        });
-    }
-
-    // Handle Select Changes
-    const selects = document.querySelectorAll('.slicer-select');
-    selects.forEach(s => {
-        s.addEventListener('change', () => {
-            if (s.id === 'filter-category') {
-                updateProductOptions();
+        return (D.products || []).filter(p => {
+            if (!catSet.has('All') && catSet.size > 0 && !catSet.has(p.category)) return false;
+            if (!groupSet.has('All') && groupSet.size > 0 && !groupSet.has(p.group)) return false;
+            if (!statusSet.has('All') && statusSet.size > 0) {
+                const isL = p.is_launched;
+                let sm = false;
+                if ((statusSet.has('Post-Launch') || statusSet.has('Launched')) && isL) sm = true;
+                if ((statusSet.has('Pre-Launch') || statusSet.has('Existing')) && !isL) sm = true;
+                if (!sm) return false;
             }
+            return true;
+        }).map(p => p.Product_ID);
+    }
+    if (id === 'filter-status') return ['Pre-Launch', 'Post-Launch'];
+    if (id === 'filter-segment') return ['High Value', 'Mid Value', 'Budget'];
+    if (id === 'filter-price') return ['Low', 'Medium', 'High'];
+    if (id === 'filter-region') return (D.regions || []).map(r => r.Region);
+    return [];
+}
+
+function renderSlicerPopover(id) {
+    const selectEl = document.getElementById(id);
+    if (!selectEl) return;
+    const box = selectEl.closest('.slicer-box');
+    if (!box) return;
+
+    // Trigger label container
+    let trigger = box.querySelector('.slicer-trigger-text');
+    if (!trigger) {
+        trigger = document.createElement('div');
+        trigger.className = 'slicer-trigger-text';
+        box.insertBefore(trigger, selectEl);
+    }
+    selectEl.style.display = 'none';
+
+    // Popover menu element
+    let popover = box.querySelector('.slicer-popover-menu');
+    if (!popover) {
+        popover = document.createElement('div');
+        popover.className = 'slicer-popover-menu';
+        box.appendChild(popover);
+    }
+
+    const availableOptions = getSlicerOptions(id);
+    const activeSet = window.multiSelectState[id] || new Set(['All']);
+    const isAll = activeSet.has('All') || activeSet.size === 0;
+
+    let popoverHTML = `
+        <label class="slicer-option-item select-all">
+            <input type="checkbox" value="All" ${isAll ? 'checked' : ''} />
+            <span>Select All</span>
+        </label>
+        <div class="slicer-popover-divider"></div>
+    `;
+
+    availableOptions.forEach(opt => {
+        const isChecked = !isAll && activeSet.has(opt);
+        popoverHTML += `
+            <label class="slicer-option-item">
+                <input type="checkbox" value="${opt}" ${isChecked ? 'checked' : ''} />
+                <span>${opt}</span>
+            </label>
+        `;
+    });
+
+    popover.innerHTML = popoverHTML;
+
+    // Trigger text label formatting
+    const defaultLabels = {
+        'filter-date': 'All Time',
+        'filter-category': 'All Categories',
+        'filter-group': 'All Groups',
+        'filter-product': 'All Products',
+        'filter-status': 'All Status',
+        'filter-segment': 'All Segments',
+        'filter-price': 'All Prices',
+        'filter-region': 'All Regions'
+    };
+
+    if (isAll) {
+        trigger.textContent = defaultLabels[id] || 'All';
+        selectEl.value = 'All';
+    } else {
+        const arr = Array.from(activeSet);
+        selectEl.value = arr[0];
+        if (arr.length === 1) {
+            trigger.textContent = arr[0];
+        } else if (arr.length === 2) {
+            trigger.textContent = `${arr[0]}, ${arr[1]}`;
+        } else {
+            trigger.textContent = `${arr[0]}, ${arr[1]} (+${arr.length - 2})`;
+        }
+    }
+
+    // Attach click events on checkboxes inside popover
+    popover.querySelectorAll('input[type="checkbox"]').forEach(chk => {
+        chk.addEventListener('change', (e) => {
+            e.stopPropagation();
+            const val = chk.value;
+            if (val === 'All') {
+                window.multiSelectState[id] = new Set(['All']);
+            } else {
+                window.multiSelectState[id].delete('All');
+                if (chk.checked) {
+                    window.multiSelectState[id].add(val);
+                } else {
+                    window.multiSelectState[id].delete(val);
+                }
+                if (window.multiSelectState[id].size === 0 || window.multiSelectState[id].size === availableOptions.length) {
+                    window.multiSelectState[id] = new Set(['All']);
+                }
+            }
+
+            renderSlicerPopover(id);
+
+            if (['filter-category', 'filter-group', 'filter-status'].includes(id)) {
+                renderSlicerPopover('filter-product');
+            }
+
             applyFilters();
         });
+    });
+}
+
+function initSlicers() {
+    const filterIds = [
+        'filter-date', 'filter-category', 'filter-group', 'filter-product',
+        'filter-status', 'filter-segment', 'filter-price', 'filter-region'
+    ];
+
+    filterIds.forEach(id => {
+        const selectEl = document.getElementById(id);
+        if (!selectEl) return;
+        const box = selectEl.closest('.slicer-box');
+        if (!box) return;
+
+        renderSlicerPopover(id);
+
+        box.addEventListener('click', (e) => {
+            if (e.target.closest('.slicer-popover-menu') || e.target.closest('.slicer-clear-cross')) return;
+            const popover = box.querySelector('.slicer-popover-menu');
+            if (!popover) return;
+
+            const wasOpen = popover.classList.contains('open');
+            document.querySelectorAll('.slicer-popover-menu').forEach(m => m.classList.remove('open'));
+
+            if (!wasOpen) {
+                renderSlicerPopover(id);
+                popover.classList.add('open');
+            }
+        });
+    });
+
+    // Close popovers on click outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.slicer-box')) {
+            document.querySelectorAll('.slicer-popover-menu').forEach(m => m.classList.remove('open'));
+        }
     });
 
     // Handle Reset buttons
@@ -1697,10 +1834,12 @@ function initSlicers() {
     resetBtns.forEach(btn => {
         if (btn) {
             btn.addEventListener('click', () => {
-                selects.forEach(s => s.value = 'All');
+                filterIds.forEach(id => {
+                    window.multiSelectState[id] = new Set(['All']);
+                    renderSlicerPopover(id);
+                });
                 const searchInput = document.getElementById('filter-search');
                 if (searchInput) searchInput.value = '';
-                updateProductOptions();
                 applyFilters('all');
             });
         }
@@ -1713,162 +1852,86 @@ function initSlicers() {
             applyFilters();
         });
     }
-
-    // Handle Quick Preset Chips
-    document.querySelectorAll('.preset-chip[data-preset]').forEach(chip => {
-        chip.addEventListener('click', () => {
-            const preset = chip.dataset.preset;
-            applyPreset(preset);
-        });
-    });
-
-    // Handle Detailed Filters Grid Panel Toggle
-    const toggleGridBtn = document.getElementById('toggleGridBtn');
-    const filterGridPanel = document.getElementById('filterGridPanel');
-    if (toggleGridBtn && filterGridPanel) {
-        toggleGridBtn.addEventListener('click', () => {
-            filterGridPanel.classList.toggle('open');
-            toggleGridBtn.classList.toggle('active');
-        });
-    }
 }
 
 function updateProductOptions() {
-    const prodSelect = document.getElementById('filter-product');
-    const catSelect = document.getElementById('filter-category');
-    const groupSelect = document.getElementById('filter-group');
-    const statusSelect = document.getElementById('filter-status') || document.getElementById('filter-type');
-    if (!prodSelect) return;
-
-    const currentProd = prodSelect.value;
-    const selectedCat = catSelect ? catSelect.value : 'All';
-    const selectedGroup = groupSelect ? groupSelect.value : 'All';
-    const selectedStatus = statusSelect ? statusSelect.value : 'All';
-
-    prodSelect.innerHTML = '<option value="All">All Products</option>';
-
-    const filteredProds = (D.products || []).filter(p => {
-        if (selectedCat !== 'All' && p.category !== selectedCat) return false;
-        if (selectedGroup !== 'All' && p.group !== selectedGroup) return false;
-        if ((selectedStatus === 'Post-Launch' || selectedStatus === 'Launched') && !p.is_launched) return false;
-        if ((selectedStatus === 'Pre-Launch' || selectedStatus === 'Existing') && p.is_launched) return false;
-        return true;
-    });
-
-    filteredProds.forEach(p => {
-        const option = document.createElement('option');
-        option.value = p.Product_ID;
-        option.textContent = `${p.Product_ID} (${p.category})`;
-        prodSelect.appendChild(option);
-    });
-
-    if ([...prodSelect.options].some(o => o.value === currentProd)) {
-        prodSelect.value = currentProd;
-    } else {
-        prodSelect.value = 'All';
-    }
+    renderSlicerPopover('filter-product');
 }
 
 function applyPreset(preset) {
-    const selects = document.querySelectorAll('.slicer-select');
-    selects.forEach(s => s.value = 'All');
-    const searchInput = document.getElementById('filter-search');
-    if (searchInput) searchInput.value = '';
+    const filterIds = [
+        'filter-date', 'filter-category', 'filter-group', 'filter-product',
+        'filter-status', 'filter-segment', 'filter-price', 'filter-region'
+    ];
+    filterIds.forEach(id => window.multiSelectState[id] = new Set(['All']));
 
     if (preset === 'launched') {
-        const typeSelect = document.getElementById('filter-status') || document.getElementById('filter-type');
-        if (typeSelect) typeSelect.value = 'Post-Launch';
+        window.multiSelectState['filter-status'] = new Set(['Post-Launch']);
     } else if (preset === 'existing') {
-        const typeSelect = document.getElementById('filter-status') || document.getElementById('filter-type');
-        if (typeSelect) typeSelect.value = 'Pre-Launch';
+        window.multiSelectState['filter-status'] = new Set(['Pre-Launch']);
     } else if (preset === 'high-value') {
-        const segSelect = document.getElementById('filter-segment');
-        if (segSelect) segSelect.value = 'High Value';
+        window.multiSelectState['filter-segment'] = new Set(['High Value']);
     } else if (preset === 'g1-g2') {
-        const groupSelect = document.getElementById('filter-group');
-        if (groupSelect) groupSelect.value = 'G1';
+        window.multiSelectState['filter-group'] = new Set(['G1']);
     } else if (preset === 'ytd2024') {
-        const dateSelect = document.getElementById('filter-date');
-        if (dateSelect) dateSelect.value = '2024';
+        window.multiSelectState['filter-date'] = new Set(['2024']);
     }
 
-    updateProductOptions();
+    filterIds.forEach(id => renderSlicerPopover(id));
     applyFilters(preset);
 }
 
-function updateFilterUI(activePreset = null) {
-    const chipsBar = document.getElementById('activeChipsBar');
-    if (!chipsBar) return;
+function updateSlicerCardIcons() {
+    const filterIds = [
+        'filter-date', 'filter-category', 'filter-group', 'filter-product',
+        'filter-status', 'filter-segment', 'filter-price', 'filter-region'
+    ];
 
-    const activeFilters = [];
+    filterIds.forEach(id => {
+        const selectEl = document.getElementById(id);
+        if (!selectEl) return;
+        const box = selectEl.closest('.slicer-box');
+        if (!box) return;
 
-    const dateVal = document.getElementById('filter-date')?.value;
-    if (dateVal && dateVal !== 'All') activeFilters.push({ id: 'filter-date', label: 'Date', value: dateVal, icon: 'calendar' });
+        const activeSet = window.multiSelectState[id] || new Set(['All']);
+        const isFiltered = !activeSet.has('All') && activeSet.size > 0;
 
-    const catVal = document.getElementById('filter-category')?.value;
-    if (catVal && catVal !== 'All') activeFilters.push({ id: 'filter-category', label: 'Category', value: catVal, icon: 'tag' });
+        let actionWrap = box.querySelector('.slicer-action-wrapper');
+        if (!actionWrap) {
+            actionWrap = document.createElement('div');
+            actionWrap.className = 'slicer-action-wrapper';
+            box.appendChild(actionWrap);
+        }
 
-    const groupVal = document.getElementById('filter-group')?.value;
-    if (groupVal && groupVal !== 'All') activeFilters.push({ id: 'filter-group', label: 'Group', value: groupVal, icon: 'layers' });
-
-    const prodVal = document.getElementById('filter-product')?.value;
-    if (prodVal && prodVal !== 'All') activeFilters.push({ id: 'filter-product', label: 'Product', value: prodVal, icon: 'box' });
-
-    const statusVal = (document.getElementById('filter-status') || document.getElementById('filter-type'))?.value;
-    if (statusVal && statusVal !== 'All') activeFilters.push({ id: 'filter-status', label: 'Status', value: statusVal, icon: 'rocket' });
-
-    const segVal = document.getElementById('filter-segment')?.value;
-    if (segVal && segVal !== 'All') activeFilters.push({ id: 'filter-segment', label: 'Segment', value: segVal, icon: 'users' });
-
-    const priceVal = document.getElementById('filter-price')?.value;
-    if (priceVal && priceVal !== 'All') activeFilters.push({ id: 'filter-price', label: 'Price', value: priceVal, icon: 'indian-rupee' });
-
-    const regVal = document.getElementById('filter-region')?.value;
-    if (regVal && regVal !== 'All') activeFilters.push({ id: 'filter-region', label: 'Region', value: regVal, icon: 'map-pin' });
-
-    const searchVal = document.getElementById('filter-search')?.value.trim();
-    if (searchVal) activeFilters.push({ id: 'filter-search', label: 'Search', value: `"${searchVal}"`, icon: 'search' });
-
-    chipsBar.innerHTML = '';
-    if (activeFilters.length === 0) {
-        const total = (D.products || []).length;
-        chipsBar.innerHTML = `<span class="active-scope-info"><i data-lucide="filter"></i> Active Scope: Full Portfolio (All ${total} Products Selected)</span>`;
-    } else {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'active-chips-wrapper';
-        wrapper.style.display = 'flex';
-        wrapper.style.alignItems = 'center';
-        wrapper.style.gap = '8px';
-        wrapper.style.flexWrap = 'wrap';
-
-        activeFilters.forEach(f => {
-            const chip = document.createElement('div');
-            chip.className = 'filter-chip';
-            chip.innerHTML = `
-                <i data-lucide="${f.icon}" class="chip-icon"></i>
-                <span class="chip-label-text"><strong>${f.label}:</strong> ${f.value}</span>
-                <button class="chip-remove" data-id="${f.id}" title="Remove ${f.label} filter">&times;</button>
-            `;
-            chip.querySelector('.chip-remove').addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (f.id === 'filter-search') {
-                    const s = document.getElementById('filter-search');
-                    if (s) s.value = '';
-                } else {
-                    const el = document.getElementById(f.id) || document.getElementById('filter-type');
-                    if (el) el.value = 'All';
-                    if (['filter-category', 'filter-group', 'filter-status', 'filter-type'].includes(f.id)) updateProductOptions();
-                }
-                applyFilters();
-            });
-            wrapper.appendChild(chip);
-        });
-        chipsBar.appendChild(wrapper);
-    }
+        if (isFiltered) {
+            box.classList.add('is-active');
+            actionWrap.innerHTML = `<span class="slicer-clear-cross" title="Reset filter">&times;</span>`;
+            const crossBtn = actionWrap.querySelector('.slicer-clear-cross');
+            if (crossBtn) {
+                crossBtn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.multiSelectState[id] = new Set(['All']);
+                    renderSlicerPopover(id);
+                    if (['filter-category', 'filter-group', 'filter-status'].includes(id)) {
+                        renderSlicerPopover('filter-product');
+                    }
+                    applyFilters();
+                };
+            }
+        } else {
+            box.classList.remove('is-active');
+            actionWrap.innerHTML = `<i data-lucide="chevron-down" class="slicer-arrow"></i>`;
+        }
+    });
 
     if (window.lucide && window.lucide.createIcons) {
         window.lucide.createIcons();
     }
+}
+
+function updateFilterUI(activePreset = null) {
+    updateSlicerCardIcons();
 }
 
 function isDefaultFilterState() {
@@ -1976,33 +2039,38 @@ function toggleFullScreen() {
 
 
 function applyFilters(preset = null) {
-    const cat = document.getElementById('filter-category')?.value || 'All';
-    const status = (document.getElementById('filter-status') || document.getElementById('filter-type'))?.value || 'All';
-    const group = document.getElementById('filter-group')?.value || 'All';
-    const prod = document.getElementById('filter-product')?.value || 'All';
-    const date = document.getElementById('filter-date')?.value || 'All';
-    const region = document.getElementById('filter-region')?.value || 'All';
-    const segment = document.getElementById('filter-segment')?.value || 'All';
-    const price = document.getElementById('filter-price')?.value || 'All';
+    const catSet = window.multiSelectState['filter-category'] || new Set(['All']);
+    const groupSet = window.multiSelectState['filter-group'] || new Set(['All']);
+    const statusSet = window.multiSelectState['filter-status'] || new Set(['All']);
+    const prodSet = window.multiSelectState['filter-product'] || new Set(['All']);
+    const dateSet = window.multiSelectState['filter-date'] || new Set(['All']);
+    const regSet = window.multiSelectState['filter-region'] || new Set(['All']);
+    const segSet = window.multiSelectState['filter-segment'] || new Set(['All']);
+    const priceSet = window.multiSelectState['filter-price'] || new Set(['All']);
     const searchQuery = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
 
-    window.filterDate = date;
-    window.filterRegion = region;
-    window.filterSegment = segment;
-    window.filterPrice = price;
-    window.filterGroup = group;
-    window.filterCategory = cat;
-    window.filterProduct = prod;
-    window.filterStatus = status;
+    window.filterDate = Array.from(dateSet)[0] || 'All';
+    window.filterRegion = Array.from(regSet)[0] || 'All';
+    window.filterSegment = Array.from(segSet)[0] || 'All';
+    window.filterPrice = Array.from(priceSet)[0] || 'All';
+    window.filterGroup = Array.from(groupSet)[0] || 'All';
+    window.filterCategory = Array.from(catSet)[0] || 'All';
+    window.filterProduct = Array.from(prodSet)[0] || 'All';
+    window.filterStatus = Array.from(statusSet)[0] || 'All';
     window.filterSearch = searchQuery;
 
     window.filteredProducts = D.products.filter(p => {
         let match = true;
-        if (cat !== 'All' && p.category !== cat) match = false;
-        if (group !== 'All' && p.group !== group) match = false;
-        if ((status === 'Post-Launch' || status === 'Launched') && !p.is_launched) match = false;
-        if ((status === 'Pre-Launch' || status === 'Existing') && p.is_launched) match = false;
-        if (prod !== 'All' && p.Product_ID !== prod) match = false;
+        if (!catSet.has('All') && catSet.size > 0 && !catSet.has(p.category)) match = false;
+        if (!groupSet.has('All') && groupSet.size > 0 && !groupSet.has(p.group)) match = false;
+        if (!statusSet.has('All') && statusSet.size > 0) {
+            const isL = p.is_launched;
+            let sm = false;
+            if ((statusSet.has('Post-Launch') || statusSet.has('Launched')) && isL) sm = true;
+            if ((statusSet.has('Pre-Launch') || statusSet.has('Existing')) && !isL) sm = true;
+            if (!sm) match = false;
+        }
+        if (!prodSet.has('All') && prodSet.size > 0 && !prodSet.has(p.Product_ID)) match = false;
         if (searchQuery && !p.Product_ID.toLowerCase().includes(searchQuery) && !p.category.toLowerCase().includes(searchQuery) && !p.group.toLowerCase().includes(searchQuery)) {
             match = false;
         }
