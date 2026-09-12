@@ -14,158 +14,169 @@
     <link rel="stylesheet" href="style.css">
 </head>
 
-<body>
+<body class="light-theme">
 
     <!-- Sidebar Navigation -->
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <div class="logo">P105</div>
+            <div class="sidebar-brand-box">
+                <span class="sidebar-badge-pill">P105</span>
+                <span class="sidebar-title">Analytics</span>
+            </div>
             <div class="logo-sub">Product Cannibalization & Demand Shift Analysis</div>
         </div>
+
+        <div class="nav-section-label">MAIN MENU</div>
+
         <ul class="nav-links">
             <li><a href="#" class="nav-link active" data-page="executive" id="nav-executive">
-                    <span class="nav-icon">📊</span><span class="nav-text">Executive Overview</span></a></li>
+                    <i data-lucide="layout-dashboard"></i><span class="nav-text">Executive Overview</span></a></li>
             <li><a href="#" class="nav-link" data-page="sales" id="nav-sales">
-                    <span class="nav-icon">📈</span><span class="nav-text">Sales Performance</span></a></li>
+                    <i data-lucide="trending-up"></i><span class="nav-text">Sales Performance</span></a></li>
             <li><a href="#" class="nav-link" data-page="products" id="nav-products">
-                    <span class="nav-icon">📦</span><span class="nav-text">Product Performance</span></a></li>
+                    <i data-lucide="package"></i><span class="nav-text">Product Performance</span></a></li>
             <li><a href="#" class="nav-link" data-page="cannibalization" id="nav-cannibalization">
-                    <span class="nav-icon">🔄</span><span class="nav-text">Cannibalization</span></a></li>
+                    <i data-lucide="pie-chart"></i><span class="nav-text">Cannibalization</span></a></li>
             <li><a href="#" class="nav-link" data-page="customers" id="nav-customers">
-                    <span class="nav-icon">👥</span><span class="nav-text">Customer Insights</span></a></li>
+                    <i data-lucide="users"></i><span class="nav-text">Customer Insights</span></a></li>
             <li><a href="#" class="nav-link" data-page="pricing" id="nav-pricing">
-                    <span class="nav-icon">💰</span><span class="nav-text">Pricing Analysis</span></a></li>
+                    <i data-lucide="tag"></i><span class="nav-text">Pricing Analysis</span></a></li>
             <li><a href="#" class="nav-link" data-page="marketing" id="nav-marketing">
-                    <span class="nav-icon">📣</span><span class="nav-text">Marketing Analysis</span></a></li>
+                    <i data-lucide="megaphone"></i><span class="nav-text">Marketing Analysis</span></a></li>
             <li><a href="#" class="nav-link" data-page="inventory" id="nav-inventory">
-                    <span class="nav-icon">📋</span><span class="nav-text">Inventory Analysis</span></a></li>
+                    <i data-lucide="archive"></i><span class="nav-text">Inventory Analysis</span></a></li>
             <li><a href="#" class="nav-link" data-page="regional" id="nav-regional">
-                    <span class="nav-icon">🗺️</span><span class="nav-text">Regional Analysis</span></a></li>
+                    <i data-lucide="map-pin"></i><span class="nav-text">Regional Analysis</span></a></li>
             <li><a href="#" class="nav-link" data-page="recommendations" id="nav-recommendations">
-                    <span class="nav-icon">💡</span><span class="nav-text">Recommendations</span></a></li>
+                    <i data-lucide="sparkles"></i><span class="nav-text">Recommendations</span></a></li>
         </ul>
 
-        <!-- Slicer / Filters -->
-        <div class="slicer-section" id="slicerSection">
-            <div class="slicer-header" id="slicerToggle">
-                <span class="slicer-icon">🎛️</span>
-                <span class="slicer-title">Filters</span>
-                <span class="slicer-arrow" id="slicerArrow">▾</span>
-            </div>
-            <div class="slicer-body" id="slicerBody">
-
-                <div class="slicer-group">
-                    <label class="slicer-label" for="filter-date">Date Range</label>
-                    <select id="filter-date" class="slicer-select">
-                        <option value="All">All Time</option>
-                        <option value="2023">2023 Only</option>
-                        <option value="2024">2024 Only</option>
-                    </select>
-                </div>
-
-                <div class="slicer-group">
-                    <label class="slicer-label" for="filter-category">Category</label>
-                    <select id="filter-category" class="slicer-select">
-                        <option value="All">All Categories</option>
-                    </select>
-                </div>
-
-                <div class="slicer-group">
-                    <label class="slicer-label" for="filter-region">Region</label>
-                    <select id="filter-region" class="slicer-select">
-                        <option value="All">All Regions</option>
-                    </select>
-                </div>
-
-                <div class="slicer-group">
-                    <label class="slicer-label" for="filter-type">Product Type</label>
-                    <select id="filter-type" class="slicer-select">
-                        <option value="All">All Products</option>
-                        <option value="Launched">Launched Only</option>
-                        <option value="Existing">Existing Only</option>
-                    </select>
-                </div>
-
-                <div class="slicer-group">
-                    <label class="slicer-label" for="filter-group">Product Group</label>
-                    <select id="filter-group" class="slicer-select">
-                        <option value="All">All Groups</option>
-                    </select>
-                </div>
-
-                <div class="slicer-group">
-                    <label class="slicer-label" for="filter-product">Product</label>
-                    <select id="filter-product" class="slicer-select">
-                        <option value="All">All Products</option>
-                    </select>
-                </div>
-
-                <div class="slicer-group">
-                    <label class="slicer-label" for="filter-segment">Customer Segment</label>
-                    <select id="filter-segment" class="slicer-select">
-                        <option value="All">All Segments</option>
-                        <option value="High Value">High Value</option>
-                        <option value="Mid Value">Mid Value</option>
-                        <option value="Low Value">Low Value</option>
-                    </select>
-                </div>
-
-                <div class="slicer-group">
-                    <label class="slicer-label" for="filter-price">Price Range</label>
-                    <select id="filter-price" class="slicer-select">
-                        <option value="All">All Prices</option>
-                        <option value="Low">Low (&lt; ₹100)</option>
-                        <option value="Medium">Medium (₹100 - ₹200)</option>
-                        <option value="High">High (&gt; ₹200)</option>
-                    </select>
-                </div>
-
-                <button class="slicer-reset" id="slicerReset">↺ Reset All</button>
-            </div>
-        </div>
-
         <div class="sidebar-footer">
-            <div class="theme-toggle" id="themeToggle">
-                <span class="theme-icon">☀️</span> <span class="theme-text">Light Mode</span>
-            </div>
-            <div class="author">By Harish Chavan • v1.0</div>
+            <button id="themeToggle" class="theme-toggle-btn">
+                <i data-lucide="moon" class="theme-icon"></i>
+                <span class="theme-text">Dark Mode</span>
+            </button>
+            <div class="sidebar-credits">By Harish Chavan • v1.0</div>
         </div>
     </nav>
 
     <!-- Main Content -->
     <main class="main-content" id="mainContent">
 
-        <!-- ═══════════ PAGE 1: EXECUTIVE OVERVIEW ═══════════ -->
+        <!-- Top Header Navigation Bar -->
+        <div class="top-header-bar">
+            <div class="header-search-container">
+                <i data-lucide="search" class="header-search-icon"></i>
+                <input type="text" id="filter-search" placeholder="Search for product, category, or group..." />
+            </div>
+            <div class="header-right-actions">
+                <button class="icon-btn header-doc-btn" title="Project Documents & Manual"
+                    onclick="openDocModal(event)">
+                    <i data-lucide="file-text"></i>
+                </button>
+                <div class="user-profile-pill creator-header-pill" onclick="switchTab('creator')"
+                    title="View Creator Profile">
+                    <div class="avatar-circle creator-avatar">HC</div>
+                    <div class="user-info-text">
+                        <span class="user-name">Harish Chavan</span>
+                        <span class="user-role">Creator & Analyst</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="user-chevron"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Filter Control Hub (3-Section Layout Matching Mockup) -->
+        <div class="filter-control-hub" id="filterControlHub">
+            <div class="filter-hub-container">
+                <!-- Section 1 (Left Panel): Page Title + Clear Filters Button -->
+                <div class="filter-sec-left">
+                    <div class="title-badge-wrap">
+                        <h2 class="filter-page-title" id="filter-hub-page-title">Executive Overview</h2>
+                    </div>
+                    <div class="clear-filters-wrap">
+                        <button class="clear-filters-btn" id="globalResetBtn" title="Reset all active filters">
+                            <i data-lucide="rotate-ccw"></i> Clear Filters
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Vertical Divider Line -->
+                <div class="filter-divider"></div>
+
+                <!-- Section 2 (Right Panel): 2x4 Grid of 8 Slicers -->
+                <div class="filter-sec-grid">
+                    <div class="filter-slicer-grid">
+                        <div class="slicer-box">
+                            <div class="slicer-badge purple"><i data-lucide="calendar"></i></div>
+                            <select id="filter-date" class="slicer-select">
+                                <option value="All">All Time</option>
+                                <option value="2023">2023</option>
+                                <option value="2024">2024</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="slicer-arrow"></i>
+                        </div>
+                        <div class="slicer-box">
+                            <div class="slicer-badge blue"><i data-lucide="tag"></i></div>
+                            <select id="filter-category" class="slicer-select">
+                                <option value="All">All Categories</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="slicer-arrow"></i>
+                        </div>
+                        <div class="slicer-box">
+                            <div class="slicer-badge purple"><i data-lucide="layers"></i></div>
+                            <select id="filter-group" class="slicer-select">
+                                <option value="All">All Groups</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="slicer-arrow"></i>
+                        </div>
+                        <div class="slicer-box">
+                            <div class="slicer-badge blue"><i data-lucide="box"></i></div>
+                            <select id="filter-product" class="slicer-select">
+                                <option value="All">All Products</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="slicer-arrow"></i>
+                        </div>
+                        <div class="slicer-box">
+                            <div class="slicer-badge teal"><i data-lucide="rocket"></i></div>
+                            <select id="filter-status" class="slicer-select">
+                                <option value="All">All Status</option>
+                                <option value="Pre-Launch">Pre-Launch</option>
+                                <option value="Post-Launch">Post-Launch</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="slicer-arrow"></i>
+                        </div>
+                        <div class="slicer-box">
+                            <div class="slicer-badge amber"><i data-lucide="users"></i></div>
+                            <select id="filter-segment" class="slicer-select">
+                                <option value="All">All Segments</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="slicer-arrow"></i>
+                        </div>
+                        <div class="slicer-box">
+                            <div class="slicer-badge green"><i data-lucide="indian-rupee"></i></div>
+                            <select id="filter-price" class="slicer-select">
+                                <option value="All">All Prices</option>
+                                <option value="Low">Low (&lt; &#8377;1100)</option>
+                                <option value="Medium">Medium (&#8377;1100 - &#8377;1200)</option>
+                                <option value="High">High (&gt; &#8377;1200)</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="slicer-arrow"></i>
+                        </div>
+                        <div class="slicer-box">
+                            <div class="slicer-badge red"><i data-lucide="map-pin"></i></div>
+                            <select id="filter-region" class="slicer-select">
+                                <option value="All">All Regions</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="slicer-arrow"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="active-chips-bar" id="activeChipsBar"></div>
+        </div>
+
         <section class="page active" id="page-executive">
-            <div class="page-header">
-                <div class="header-title-group">
-                    <h1 class="page-title">Executive Overview</h1>
-                    <p class="page-subtitle">Key performance metrics at a glance</p>
-                </div>
-                <div class="header-actions">
-                    <a href="https://github.com/Harry-0402/P105-Product-Cannibalization-/tree/main" target="_blank"
-                        class="header-btn">
-                        <span>📄</span> Documents
-                    </a>
-                    <a href="https://github.com/Harry-0402/P105-Product-Cannibalization-" target="_blank"
-                        class="header-btn">
-                        <span><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2"
-                                fill="none">
-                                <path
-                                    d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
-                                </path>
-                            </svg></span> GitHub Repo
-                    </a>
-                    <a href="#" class="header-btn nav-link" data-page="creator">
-                        <span>👤</span> Creator Profile
-                    </a>
-                </div>
-            </div>
-            <div class="guide-note">
-                <strong>💡 How to use this page:</strong> This dashboard summarizes the total portfolio impact before
-                and after the new product launches in June 2024. Use the top KPI cards to check overall health, and the
-                charts below to see how overall sales are shifting across categories and regions.
-            </div>
 
             <div class="kpi-grid" id="kpi-grid">
                 <!-- KPI cards injected by JS -->
@@ -192,35 +203,6 @@
 
         <!-- ═══════════ PAGE 2: SALES PERFORMANCE ═══════════ -->
         <section class="page" id="page-sales">
-            <div class="page-header">
-                <div class="header-title-group">
-                    <h1 class="page-title">Sales Performance</h1>
-                    <p class="page-subtitle">Monthly sales trends and before/after comparison</p>
-                </div>
-                <div class="header-actions">
-                    <a href="https://github.com/Harry-0402/P105-Product-Cannibalization-/tree/main" target="_blank"
-                        class="header-btn">
-                        <span>📄</span> Documents
-                    </a>
-                    <a href="https://github.com/Harry-0402/P105-Product-Cannibalization-" target="_blank"
-                        class="header-btn">
-                        <span><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2"
-                                fill="none">
-                                <path
-                                    d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
-                                </path>
-                            </svg></span> GitHub Repo
-                    </a>
-                    <a href="#" class="header-btn nav-link" data-page="creator">
-                        <span>👤</span> Creator Profile
-                    </a>
-                </div>
-            </div>
-            <div class="guide-note">
-                <strong>📈 Interpreting Sales Data:</strong> The top chart shows monthly sales momentum, with the June
-                2024 launch event highlighted. The "Sales by Product Group" chart is filtered to only show the impacted
-                groups (G1 and G2) by default—you can click the legend to view other groups.
-            </div>
 
             <div class="chart-row">
                 <div class="chart-card wide">
@@ -250,35 +232,6 @@
 
         <!-- ═══════════ PAGE 3: PRODUCT PERFORMANCE ═══════════ -->
         <section class="page" id="page-products">
-            <div class="page-header">
-                <div class="header-title-group">
-                    <h1 class="page-title">Product Performance</h1>
-                    <p class="page-subtitle">Rankings, growth analysis, and revenue contribution</p>
-                </div>
-                <div class="header-actions">
-                    <a href="https://github.com/Harry-0402/P105-Product-Cannibalization-/tree/main" target="_blank"
-                        class="header-btn">
-                        <span>📄</span> Documents
-                    </a>
-                    <a href="https://github.com/Harry-0402/P105-Product-Cannibalization-" target="_blank"
-                        class="header-btn">
-                        <span><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2"
-                                fill="none">
-                                <path
-                                    d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
-                                </path>
-                            </svg></span> GitHub Repo
-                    </a>
-                    <a href="#" class="header-btn nav-link" data-page="creator">
-                        <span>👤</span> Creator Profile
-                    </a>
-                </div>
-            </div>
-            <div class="guide-note">
-                <strong>📦 Product Level Drill-Down:</strong> This section ranks individual products by their total
-                revenue contribution and sales growth. <strong>Tip:</strong> Use the filters in the sidebar to isolate
-                specific products, categories, or price ranges in the data table below!
-            </div>
 
             <div class="chart-row">
                 <div class="chart-card">
@@ -303,36 +256,6 @@
 
         <!-- ═══════════ PAGE 4: CANNIBALIZATION ANALYSIS ═══════════ -->
         <section class="page" id="page-cannibalization">
-            <div class="page-header">
-                <div class="header-title-group">
-                    <h1 class="page-title">Cannibalization Analysis</h1>
-                    <p class="page-subtitle">Demand shift, customer migration, and cannibalization metrics</p>
-                </div>
-                <div class="header-actions">
-                    <a href="https://github.com/Harry-0402/P105-Product-Cannibalization-/tree/main" target="_blank"
-                        class="header-btn">
-                        <span>📄</span> Documents
-                    </a>
-                    <a href="https://github.com/Harry-0402/P105-Product-Cannibalization-" target="_blank"
-                        class="header-btn">
-                        <span><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2"
-                                fill="none">
-                                <path
-                                    d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
-                                </path>
-                            </svg></span> GitHub Repo
-                    </a>
-                    <a href="#" class="header-btn nav-link" data-page="creator">
-                        <span>👤</span> Creator Profile
-                    </a>
-                </div>
-            </div>
-            <div class="guide-note">
-                <strong>⚠️ Identifying Cannibalization:</strong> This is the core analysis page. Pay close attention to
-                <strong>Product P6</strong>. The timeline graph reveals a direct correlation: as the new products
-                (P4/P5) launched, P6's sales sharply declined. The migration chart proves that 14.9% of P6's customers
-                actively switched to the new products.
-            </div>
 
             <div class="kpi-grid small" id="cann-kpis">
                 <!-- Injected by JS -->
@@ -359,36 +282,6 @@
 
         <!-- ═══════════ PAGE 5: CUSTOMER INSIGHTS ═══════════ -->
         <section class="page" id="page-customers">
-            <div class="page-header">
-                <div class="header-title-group">
-                    <h1 class="page-title">Customer Insights</h1>
-                    <p class="page-subtitle">Customer behavior, retention, and switching patterns</p>
-                </div>
-                <div class="header-actions">
-                    <a href="https://github.com/Harry-0402/P105-Product-Cannibalization-/tree/main" target="_blank"
-                        class="header-btn">
-                        <span>📄</span> Documents
-                    </a>
-                    <a href="https://github.com/Harry-0402/P105-Product-Cannibalization-" target="_blank"
-                        class="header-btn">
-                        <span><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2"
-                                fill="none">
-                                <path
-                                    d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
-                                </path>
-                            </svg></span> GitHub Repo
-                    </a>
-                    <a href="#" class="header-btn nav-link" data-page="creator">
-                        <span>👤</span> Creator Profile
-                    </a>
-                </div>
-            </div>
-            <div class="guide-note">
-                <strong>👥 Understanding the Customer Base:</strong> These charts analyze behavior beneath the sales
-                numbers. A high overall retention rate is good, but the "Switcher" data proves that many existing
-                customers aren't buying *more*, they are simply abandoning older products to buy the newly launched ones
-                instead.
-            </div>
 
             <div class="kpi-grid small" id="cust-kpis"></div>
 
@@ -406,30 +299,6 @@
 
         <!-- ═══════════ PAGE 6: PRICING ANALYSIS ═══════════ -->
         <section class="page" id="page-pricing">
-            <div class="page-header">
-                <div class="header-title-group">
-                    <h1 class="page-title">Pricing Analysis</h1>
-                    <p class="page-subtitle">Price distribution, price bands, and pricing impact</p>
-                </div>
-                <div class="header-actions">
-                    <a href="https://github.com/Harry-0402/P105-Product-Cannibalization-/tree/main" target="_blank"
-                        class="header-btn">
-                        <span>📄</span> Documents
-                    </a>
-                    <a href="https://github.com/Harry-0402/P105-Product-Cannibalization-" target="_blank"
-                        class="header-btn">
-                        <span><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2"
-                                fill="none">
-                                <path
-                                    d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
-                                </path>
-                            </svg></span> GitHub Repo
-                    </a>
-                    <a href="#" class="header-btn nav-link" data-page="creator">
-                        <span>👤</span> Creator Profile
-                    </a>
-                </div>
-            </div>
 
             <div class="chart-row">
                 <div class="chart-card">
@@ -452,30 +321,6 @@
 
         <!-- ═══════════ PAGE 7: MARKETING ANALYSIS ═══════════ -->
         <section class="page" id="page-marketing">
-            <div class="page-header">
-                <div class="header-title-group">
-                    <h1 class="page-title">Marketing Analysis</h1>
-                    <p class="page-subtitle">Marketing ROI and efficiency across products</p>
-                </div>
-                <div class="header-actions">
-                    <a href="https://github.com/Harry-0402/P105-Product-Cannibalization-/tree/main" target="_blank"
-                        class="header-btn">
-                        <span>📄</span> Documents
-                    </a>
-                    <a href="https://github.com/Harry-0402/P105-Product-Cannibalization-" target="_blank"
-                        class="header-btn">
-                        <span><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2"
-                                fill="none">
-                                <path
-                                    d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
-                                </path>
-                            </svg></span> GitHub Repo
-                    </a>
-                    <a href="#" class="header-btn nav-link" data-page="creator">
-                        <span>👤</span> Creator Profile
-                    </a>
-                </div>
-            </div>
 
             <div class="chart-row">
                 <div class="chart-card wide">
@@ -487,30 +332,6 @@
 
         <!-- ═══════════ PAGE 8: INVENTORY ANALYSIS ═══════════ -->
         <section class="page" id="page-inventory">
-            <div class="page-header">
-                <div class="header-title-group">
-                    <h1 class="page-title">Inventory Analysis</h1>
-                    <p class="page-subtitle">Stock availability trends and out-of-stock impact</p>
-                </div>
-                <div class="header-actions">
-                    <a href="https://github.com/Harry-0402/P105-Product-Cannibalization-/tree/main" target="_blank"
-                        class="header-btn">
-                        <span>📄</span> Documents
-                    </a>
-                    <a href="https://github.com/Harry-0402/P105-Product-Cannibalization-" target="_blank"
-                        class="header-btn">
-                        <span><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2"
-                                fill="none">
-                                <path
-                                    d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
-                                </path>
-                            </svg></span> GitHub Repo
-                    </a>
-                    <a href="#" class="header-btn nav-link" data-page="creator">
-                        <span>👤</span> Creator Profile
-                    </a>
-                </div>
-            </div>
 
             <div class="chart-row">
                 <div class="chart-card wide">
@@ -529,30 +350,6 @@
 
         <!-- ═══════════ PAGE 9: REGIONAL ANALYSIS ═══════════ -->
         <section class="page" id="page-regional">
-            <div class="page-header">
-                <div class="header-title-group">
-                    <h1 class="page-title">Regional Analysis</h1>
-                    <p class="page-subtitle">Performance comparison across regions</p>
-                </div>
-                <div class="header-actions">
-                    <a href="https://github.com/Harry-0402/P105-Product-Cannibalization-/tree/main" target="_blank"
-                        class="header-btn">
-                        <span>📄</span> Documents
-                    </a>
-                    <a href="https://github.com/Harry-0402/P105-Product-Cannibalization-" target="_blank"
-                        class="header-btn">
-                        <span><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2"
-                                fill="none">
-                                <path
-                                    d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
-                                </path>
-                            </svg></span> GitHub Repo
-                    </a>
-                    <a href="#" class="header-btn nav-link" data-page="creator">
-                        <span>👤</span> Creator Profile
-                    </a>
-                </div>
-            </div>
 
             <div class="kpi-grid small" id="region-kpis"></div>
 
@@ -570,30 +367,6 @@
 
         <!-- ═══════════ PAGE 10: RECOMMENDATIONS ═══════════ -->
         <section class="page" id="page-recommendations">
-            <div class="page-header">
-                <div class="header-title-group">
-                    <h1 class="page-title">Business Recommendations</h1>
-                    <p class="page-subtitle">Data-driven actionable insights for decision makers</p>
-                </div>
-                <div class="header-actions">
-                    <a href="https://github.com/Harry-0402/P105-Product-Cannibalization-/tree/main" target="_blank"
-                        class="header-btn">
-                        <span>📄</span> Documents
-                    </a>
-                    <a href="https://github.com/Harry-0402/P105-Product-Cannibalization-" target="_blank"
-                        class="header-btn">
-                        <span><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2"
-                                fill="none">
-                                <path
-                                    d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
-                                </path>
-                            </svg></span> GitHub Repo
-                    </a>
-                    <a href="#" class="header-btn nav-link" data-page="creator">
-                        <span>👤</span> Creator Profile
-                    </a>
-                </div>
-            </div>
 
             <div class="recommendations-grid" id="rec-grid">
                 <!-- Injected by JS -->
@@ -626,7 +399,8 @@
                         <button class="doc-btn" data-doc="Test_Plan_Validation_Document.docx">Test Plan &
                             Validation</button>
                         <button class="doc-btn" data-doc="User_Manual_Dashboard_Guide.docx">User Manual</button>
-                        <button class="doc-btn" data-doc="Reports/Business_Insights_Report.docx">Business Insights Report</button>
+                        <button class="doc-btn" data-doc="Reports/Business_Insights_Report.docx">Business Insights
+                            Report</button>
                     </div>
                     <div class="doc-viewer" style="display: flex; flex-direction: column;">
                         <div
@@ -644,17 +418,6 @@
 
         <!-- ═══════════ PAGE 11: CREATOR PROFILE ═══════════ -->
         <section class="page" id="page-creator">
-            <div class="page-header">
-                <div class="header-title-group">
-                    <h1 class="page-title">Creator Profile</h1>
-                    <p class="page-subtitle">About the Developer</p>
-                </div>
-                <div class="header-actions">
-                    <button onclick="document.querySelector('.sidebar [data-page=\'executive\']').click()" class="header-btn" style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); color: var(--accent-blue); cursor: pointer;">
-                        <span>🏠</span> Back to Home
-                    </button>
-                </div>
-            </div>
 
             <div class="kpi-card creator-profile-banner">
                 <div class="creator-profile-banner-inner">
@@ -662,7 +425,8 @@
                         <img src="profile.jpg" alt="Harish Chavan" class="creator-profile-img">
                         <div class="creator-profile-text-wrap">
                             <h2 class="creator-name">
-                                Harish Chavan <span style="font-size: 14px; font-weight: normal; color: var(--text-muted);">(He/Him)</span>
+                                Harish Chavan <span
+                                    style="font-size: 14px; font-weight: normal; color: var(--text-muted);">(He/Him)</span>
                             </h2>
                             <div class="creator-tagline">
                                 Inspired by Hydrogen, Driven by Data | MBA Business Analytics | Power BI | Python | Data
@@ -723,8 +487,18 @@
         </section>
 
     </main>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="data.js"></script>
     <script src="app.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide && window.lucide.createIcons) {
+                window.lucide.createIcons();
+            }
+        });
+    </script>
+
 </body>
 
 </html>

@@ -1,0 +1,17 @@
+node_modules/
+Dashboard/node_modules/
+.env
+Dashboard/.env
+scratch/
+*.pyc
+__pycache__/
+.DS_Store
+Thumbs.db
+~$*
+Dashboard/fix*.py
+Dashboard/remove_emojis.py
+Dashboard/modal_update.py
+Dashboard/fix_app.py
+Dashboard/emojis.txt
+fix_data.py
+script.py

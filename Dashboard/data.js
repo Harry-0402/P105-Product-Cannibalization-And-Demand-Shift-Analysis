@@ -1,20 +1,20 @@
 // Auto-generated dashboard data
 const DASHBOARD_DATA = {
   "kpis": {
-    "total_sales": 1605658,
-    "total_revenue": 191942533.0,
-    "avg_price": 130.54,
+    "total_sales": 1370037,
+    "total_revenue": 165594778.0,
+    "avg_price": 131.92,
     "avg_rating": 4.0,
-    "sales_growth": -7.5,
-    "revenue_growth": -8.46,
+    "sales_growth": -7.32,
+    "revenue_growth": -9.83,
     "cann_rate": 18.3,
     "switching_rate": 14.9,
     "retention_rate": 85.7,
-    "mkt_roi": 1.28,
-    "stock_avail": 89.9,
+    "mkt_roi": 1.29,
+    "stock_avail": 90.0,
     "total_products": 25,
-    "total_customers": 8993,
-    "oos_records": 6031
+    "total_customers": 8973,
+    "oos_records": 5145
   },
   "monthly_trends": {
     "months": [
@@ -44,23 +44,23 @@ const DASHBOARD_DATA = {
       "2024-12"
     ],
     "sales": [
-      70646,
-      61552,
-      70433,
-      68967,
-      67083,
-      66928,
-      68898,
-      71875,
-      68995,
-      68145,
-      66159,
-      68562,
-      72379,
-      64776,
-      68404,
-      65650,
-      70191,
+      56428,
+      48506,
+      56449,
+      54928,
+      54235,
+      53609,
+      54084,
+      56758,
+      53844,
+      54530,
+      53025,
+      54292,
+      58586,
+      52419,
+      54468,
+      51799,
+      56062,
       63996,
       66599,
       66024,
@@ -70,23 +70,23 @@ const DASHBOARD_DATA = {
       61503
     ],
     "revenue": [
-      8524883.0,
-      7407724.0,
-      8398571.0,
-      8363445.0,
-      8032425.0,
-      7875090.0,
-      8305103.0,
-      8717044.0,
-      8534266.0,
-      8174275.0,
-      7920208.0,
-      8054859.0,
-      8841626.0,
-      7493584.0,
-      8049013.0,
-      8107749.0,
-      8226299.0,
+      6941443.0,
+      5884488.0,
+      6792109.0,
+      6819501.0,
+      6583801.0,
+      6432200.0,
+      6630223.0,
+      6969582.0,
+      6801530.0,
+      6723210.0,
+      6450164.0,
+      6535877.0,
+      7224510.0,
+      6092126.0,
+      6530272.0,
+      6583242.0,
+      6684131.0,
       7535231.0,
       8058427.0,
       7609899.0,
@@ -97,20 +97,6 @@ const DASHBOARD_DATA = {
     ]
   },
   "products": [
-    {
-      "Product_ID": "P1",
-      "total_sales": 60059,
-      "total_revenue": 16613758.73,
-      "avg_sales": 24.21,
-      "avg_price": 289.2,
-      "avg_rating": 4.0,
-      "category": "Household",
-      "group": "G1",
-      "avg_before": 24.161199095022624,
-      "avg_after": 24.322580645161292,
-      "growth_pct": 0.67,
-      "is_launched": true
-    },
     {
       "Product_ID": "P23",
       "total_sales": 58763,
@@ -196,20 +182,6 @@ const DASHBOARD_DATA = {
       "is_launched": false
     },
     {
-      "Product_ID": "P3",
-      "total_sales": 61627,
-      "total_revenue": 10603579.63,
-      "avg_sales": 26.39,
-      "avg_price": 176.02,
-      "avg_rating": 4.02,
-      "category": "Personal Care",
-      "group": "G1",
-      "avg_before": 26.441320293398533,
-      "avg_after": 26.278969957081546,
-      "growth_pct": -0.61,
-      "is_launched": true
-    },
-    {
       "Product_ID": "P9",
       "total_sales": 57827,
       "total_revenue": 9961477.04,
@@ -250,6 +222,20 @@ const DASHBOARD_DATA = {
       "avg_after": 16.306451612903224,
       "growth_pct": -37.95,
       "is_launched": false
+    },
+    {
+      "Product_ID": "P1",
+      "total_sales": 17342,
+      "total_revenue": 4738805.13,
+      "avg_sales": 24.32,
+      "avg_price": 285.41,
+      "avg_rating": 3.99,
+      "category": "Household",
+      "group": "G1",
+      "avg_before": 0.0,
+      "avg_after": 24.322580645161292,
+      "growth_pct": 0.0,
+      "is_launched": true
     },
     {
       "Product_ID": "P16",
@@ -308,20 +294,6 @@ const DASHBOARD_DATA = {
       "is_launched": false
     },
     {
-      "Product_ID": "P5",
-      "total_sales": 71905,
-      "total_revenue": 3401717.78,
-      "avg_sales": 29.17,
-      "avg_price": 47.44,
-      "avg_rating": 4.01,
-      "category": "Dairy",
-      "group": "G2",
-      "avg_before": 29.200688073394495,
-      "avg_after": 29.097087378640776,
-      "growth_pct": -0.35,
-      "is_launched": true
-    },
-    {
       "Product_ID": "P13",
       "total_sales": 70531,
       "total_revenue": 3353029.44,
@@ -334,20 +306,6 @@ const DASHBOARD_DATA = {
       "avg_after": 28.94632768361582,
       "growth_pct": 0.14,
       "is_launched": false
-    },
-    {
-      "Product_ID": "P2",
-      "total_sales": 71280,
-      "total_revenue": 3350780.97,
-      "avg_sales": 29.07,
-      "avg_price": 47.32,
-      "avg_rating": 4.0,
-      "category": "Dairy",
-      "group": "G1",
-      "avg_before": 29.057242990654206,
-      "avg_after": 29.1,
-      "growth_pct": 0.15,
-      "is_launched": true
     },
     {
       "Product_ID": "P22",
@@ -364,20 +322,6 @@ const DASHBOARD_DATA = {
       "is_launched": false
     },
     {
-      "Product_ID": "P4",
-      "total_sales": 69193,
-      "total_revenue": 3238478.48,
-      "avg_sales": 29.1,
-      "avg_price": 47.12,
-      "avg_rating": 4.0,
-      "category": "Dairy",
-      "group": "G2",
-      "avg_before": 29.064688427299703,
-      "avg_after": 29.176046176046174,
-      "growth_pct": 0.38,
-      "is_launched": true
-    },
-    {
       "Product_ID": "P18",
       "total_sales": 68676,
       "total_revenue": 3224136.96,
@@ -390,6 +334,20 @@ const DASHBOARD_DATA = {
       "avg_after": 29.04718417047184,
       "growth_pct": 0.22,
       "is_launched": false
+    },
+    {
+      "Product_ID": "P3",
+      "total_sales": 18369,
+      "total_revenue": 3155229.54,
+      "avg_sales": 26.28,
+      "avg_price": 176.04,
+      "avg_rating": 4.03,
+      "category": "Personal Care",
+      "group": "G1",
+      "avg_before": 0.0,
+      "avg_after": 26.278969957081546,
+      "growth_pct": 0.0,
+      "is_launched": true
     },
     {
       "Product_ID": "P10",
@@ -446,6 +404,48 @@ const DASHBOARD_DATA = {
       "avg_after": 29.26861313868613,
       "growth_pct": -0.45,
       "is_launched": false
+    },
+    {
+      "Product_ID": "P2",
+      "total_sales": 21534,
+      "total_revenue": 1005603.35,
+      "avg_sales": 29.1,
+      "avg_price": 47.02,
+      "avg_rating": 4.02,
+      "category": "Dairy",
+      "group": "G1",
+      "avg_before": 0.0,
+      "avg_after": 29.1,
+      "growth_pct": 0.0,
+      "is_launched": true
+    },
+    {
+      "Product_ID": "P5",
+      "total_sales": 20979,
+      "total_revenue": 1000207.68,
+      "avg_sales": 29.1,
+      "avg_price": 47.95,
+      "avg_rating": 3.99,
+      "category": "Dairy",
+      "group": "G2",
+      "avg_before": 0.0,
+      "avg_after": 29.097087378640776,
+      "growth_pct": 0.0,
+      "is_launched": true
+    },
+    {
+      "Product_ID": "P4",
+      "total_sales": 20219,
+      "total_revenue": 960715.2,
+      "avg_sales": 29.18,
+      "avg_price": 47.7,
+      "avg_rating": 3.97,
+      "category": "Dairy",
+      "group": "G2",
+      "avg_before": 0.0,
+      "avg_after": 29.176046176046174,
+      "growth_pct": 0.0,
+      "is_launched": true
     }
   ],
   "categories": [
@@ -458,23 +458,23 @@ const DASHBOARD_DATA = {
     },
     {
       "category": "Dairy",
-      "sales_before": 29.03,
+      "sales_before": 28.97,
       "sales_after": 27.47,
-      "rev_before": 16417761.0,
+      "rev_before": 9393310.0,
       "rev_after": 6370941.0
     },
     {
       "category": "Household",
-      "sales_before": 24.21,
+      "sales_before": 24.22,
       "sales_after": 24.31,
-      "rev_before": 68426523.0,
+      "rev_before": 56551569.0,
       "rev_after": 28221292.0
     },
     {
       "category": "Personal Care",
       "sales_before": 26.45,
       "sales_after": 20.39,
-      "rev_before": 38283795.0,
+      "rev_before": 30835445.0,
       "rev_after": 11985196.0
     },
     {
@@ -495,23 +495,6 @@ const DASHBOARD_DATA = {
     "timeline": {
       "P4": {
         "months": [
-          "2023-01",
-          "2023-02",
-          "2023-03",
-          "2023-04",
-          "2023-05",
-          "2023-06",
-          "2023-07",
-          "2023-08",
-          "2023-09",
-          "2023-10",
-          "2023-11",
-          "2023-12",
-          "2024-01",
-          "2024-02",
-          "2024-03",
-          "2024-04",
-          "2024-05",
           "2024-06",
           "2024-07",
           "2024-08",
@@ -521,23 +504,6 @@ const DASHBOARD_DATA = {
           "2024-12"
         ],
         "sales": [
-          2857,
-          2088,
-          2538,
-          2704,
-          2580,
-          3185,
-          2850,
-          2480,
-          3156,
-          3121,
-          2747,
-          3404,
-          3323,
-          2301,
-          3360,
-          3286,
-          2994,
           2793,
           2895,
           3158,
@@ -549,23 +515,6 @@ const DASHBOARD_DATA = {
       },
       "P5": {
         "months": [
-          "2023-01",
-          "2023-02",
-          "2023-03",
-          "2023-04",
-          "2023-05",
-          "2023-06",
-          "2023-07",
-          "2023-08",
-          "2023-09",
-          "2023-10",
-          "2023-11",
-          "2023-12",
-          "2024-01",
-          "2024-02",
-          "2024-03",
-          "2024-04",
-          "2024-05",
           "2024-06",
           "2024-07",
           "2024-08",
@@ -575,23 +524,6 @@ const DASHBOARD_DATA = {
           "2024-12"
         ],
         "sales": [
-          2965,
-          2837,
-          2892,
-          3833,
-          2937,
-          2803,
-          3330,
-          3565,
-          3238,
-          2601,
-          2672,
-          2752,
-          2440,
-          2542,
-          3224,
-          3127,
-          3168,
           3486,
           3547,
           3102,
@@ -665,57 +597,57 @@ const DASHBOARD_DATA = {
   "regions": [
     {
       "Region": "East",
-      "total_sales": 397806,
-      "total_revenue": 47600984.22,
-      "avg_sales": 26.79,
-      "customers": 7259,
+      "total_sales": 338110,
+      "total_revenue": 40839585.68,
+      "avg_sales": 26.67,
+      "customers": 6776,
       "avg_rating": 4.01
     },
     {
       "Region": "North",
-      "total_sales": 400982,
-      "total_revenue": 47719747.03,
-      "avg_sales": 26.76,
-      "customers": 7243,
+      "total_sales": 342694,
+      "total_revenue": 41240239.82,
+      "avg_sales": 26.62,
+      "customers": 6822,
       "avg_rating": 4.01
     },
     {
       "Region": "South",
-      "total_sales": 401177,
-      "total_revenue": 48226630.69,
-      "avg_sales": 26.74,
-      "customers": 7330,
-      "avg_rating": 4.0
+      "total_sales": 343114,
+      "total_revenue": 41756319.89,
+      "avg_sales": 26.59,
+      "customers": 6923,
+      "avg_rating": 3.99
     },
     {
       "Region": "West",
-      "total_sales": 405693,
-      "total_revenue": 48395170.74,
-      "avg_sales": 26.76,
-      "customers": 7357,
-      "avg_rating": 4.0
+      "total_sales": 346119,
+      "total_revenue": 41758632.6,
+      "avg_sales": 26.63,
+      "customers": 6884,
+      "avg_rating": 3.99
     }
   ],
   "region_period": [
     {
       "region": "East",
       "after": 25.37,
-      "before": 27.39
+      "before": 27.36
     },
     {
       "region": "North",
       "after": 25.16,
-      "before": 27.4
+      "before": 27.36
     },
     {
       "region": "South",
       "after": 25.41,
-      "before": 27.31
+      "before": 27.22
     },
     {
       "region": "West",
       "after": 25.31,
-      "before": 27.35
+      "before": 27.3
     }
   ],
   "marketing": [
@@ -735,11 +667,6 @@ const DASHBOARD_DATA = {
       "is_launched": false
     },
     {
-      "product": "P1",
-      "roi": 2.69,
-      "is_launched": true
-    },
-    {
       "product": "P11",
       "roi": 2.68,
       "is_launched": false
@@ -748,6 +675,11 @@ const DASHBOARD_DATA = {
       "product": "P17",
       "roi": 2.67,
       "is_launched": false
+    },
+    {
+      "product": "P1",
+      "roi": 2.63,
+      "is_launched": true
     },
     {
       "product": "P3",
@@ -795,14 +727,14 @@ const DASHBOARD_DATA = {
       "is_launched": false
     },
     {
+      "product": "P5",
+      "roi": 0.57,
+      "is_launched": true
+    },
+    {
       "product": "P13",
       "roi": 0.56,
       "is_launched": false
-    },
-    {
-      "product": "P2",
-      "roi": 0.55,
-      "is_launched": true
     },
     {
       "product": "P22",
@@ -810,12 +742,12 @@ const DASHBOARD_DATA = {
       "is_launched": false
     },
     {
-      "product": "P5",
-      "roi": 0.55,
+      "product": "P4",
+      "roi": 0.54,
       "is_launched": true
     },
     {
-      "product": "P4",
+      "product": "P2",
       "roi": 0.54,
       "is_launched": true
     },
@@ -848,27 +780,27 @@ const DASHBOARD_DATA = {
   "price_bands": [
     {
       "band": "Budget (0-50)",
-      "avg_sales": 28.98,
-      "total_revenue": 18468461.83,
-      "count": 19938
+      "avg_sales": 28.92,
+      "total_revenue": 15785201.51,
+      "count": 17141
     },
     {
       "band": "Luxury (201+)",
-      "avg_sales": 23.14,
-      "total_revenue": 108306755.46,
-      "count": 14964
+      "avg_sales": 23.07,
+      "total_revenue": 94287831.34,
+      "count": 13046
     },
     {
       "band": "Mid (51-100)",
-      "avg_sales": 27.74,
-      "total_revenue": 32955902.37,
-      "count": 16784
+      "avg_sales": 27.54,
+      "total_revenue": 27758869.14,
+      "count": 14055
     },
     {
       "band": "Premium (101-200)",
-      "avg_sales": 25.96,
-      "total_revenue": 32211413.02,
-      "count": 8314
+      "avg_sales": 25.83,
+      "total_revenue": 27762876.0,
+      "count": 7213
     }
   ],
   "inventory": {
@@ -899,23 +831,23 @@ const DASHBOARD_DATA = {
       "2024-12"
     ],
     "stock_pct": [
-      89.7,
+      89.9,
       91.2,
-      90.5,
-      89.8,
+      90.1,
+      90.3,
       90.2,
-      89.7,
-      88.8,
+      90.2,
+      88.9,
       89.6,
       89.2,
-      90.1,
-      89.5,
-      90.2,
-      89.8,
       90.3,
-      89.6,
+      89.3,
+      90.6,
       90.3,
-      90.2,
+      90.0,
+      89.7,
+      90.3,
+      89.9,
       89.7,
       89.6,
       90.0,
@@ -925,10 +857,6 @@ const DASHBOARD_DATA = {
       89.2
     ],
     "oos_by_product": [
-      {
-        "product": "P3",
-        "oos_count": 269
-      },
       {
         "product": "P12",
         "oos_count": 264
@@ -946,28 +874,16 @@ const DASHBOARD_DATA = {
         "oos_count": 255
       },
       {
-        "product": "P2",
-        "oos_count": 254
-      },
-      {
         "product": "P23",
         "oos_count": 251
-      },
-      {
-        "product": "P5",
-        "oos_count": 249
-      },
-      {
-        "product": "P11",
-        "oos_count": 247
       },
       {
         "product": "P9",
         "oos_count": 247
       },
       {
-        "product": "P4",
-        "oos_count": 246
+        "product": "P11",
+        "oos_count": 247
       },
       {
         "product": "P19",
@@ -982,23 +898,19 @@ const DASHBOARD_DATA = {
         "oos_count": 242
       },
       {
-        "product": "P1",
-        "oos_count": 238
+        "product": "P22",
+        "oos_count": 235
       },
       {
         "product": "P17",
         "oos_count": 235
       },
       {
-        "product": "P22",
-        "oos_count": 235
-      },
-      {
-        "product": "P6",
+        "product": "P16",
         "oos_count": 234
       },
       {
-        "product": "P16",
+        "product": "P6",
         "oos_count": 234
       },
       {
@@ -1024,29 +936,32 @@ const DASHBOARD_DATA = {
       {
         "product": "P21",
         "oos_count": 208
+      },
+      {
+        "product": "P3",
+        "oos_count": 84
+      },
+      {
+        "product": "P5",
+        "oos_count": 81
+      },
+      {
+        "product": "P2",
+        "oos_count": 75
+      },
+      {
+        "product": "P1",
+        "oos_count": 70
+      },
+      {
+        "product": "P4",
+        "oos_count": 60
       }
     ]
   },
   "group_trends": {
     "G1": {
       "months": [
-        "2023-01",
-        "2023-02",
-        "2023-03",
-        "2023-04",
-        "2023-05",
-        "2023-06",
-        "2023-07",
-        "2023-08",
-        "2023-09",
-        "2023-10",
-        "2023-11",
-        "2023-12",
-        "2024-01",
-        "2024-02",
-        "2024-03",
-        "2024-04",
-        "2024-05",
         "2024-06",
         "2024-07",
         "2024-08",
@@ -1056,23 +971,6 @@ const DASHBOARD_DATA = {
         "2024-12"
       ],
       "sales": [
-        8396,
-        8121,
-        8554,
-        7502,
-        7331,
-        7331,
-        8634,
-        9072,
-        8757,
-        7893,
-        7715,
-        8114,
-        8030,
-        7514,
-        7352,
-        7438,
-        7967,
         8916,
         8987,
         8221,
@@ -1110,23 +1008,23 @@ const DASHBOARD_DATA = {
         "2024-12"
       ],
       "sales": [
-        9040,
-        7156,
-        8794,
-        9586,
-        8864,
-        8912,
-        8947,
-        8609,
-        8794,
-        8421,
-        8061,
-        8997,
-        8949,
-        7471,
-        9778,
-        8773,
-        9246,
+        3218,
+        2231,
+        3364,
+        3049,
+        3347,
+        2924,
+        2767,
+        2564,
+        2400,
+        2699,
+        2642,
+        2841,
+        3186,
+        2628,
+        3194,
+        2360,
+        3084,
         7806,
         8136,
         8246,
