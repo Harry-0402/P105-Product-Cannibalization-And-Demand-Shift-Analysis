@@ -1991,6 +1991,9 @@ function applyFilters(preset = null) {
     window.filterSegment = segment;
     window.filterPrice = price;
     window.filterGroup = group;
+    window.filterCategory = cat;
+    window.filterProduct = prod;
+    window.filterStatus = status;
     window.filterSearch = searchQuery;
 
     window.filteredProducts = D.products.filter(p => {
