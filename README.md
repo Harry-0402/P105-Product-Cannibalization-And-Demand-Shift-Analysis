@@ -55,27 +55,40 @@ The analysis uncovered a hidden profitability leak disguised as growth:
 
 ---
 
-## 🖼️ Dashboard Gallery (All 10 Analytics Views)
+## 🖼️ Dashboard Gallery (All 11 Views)
 
-| Executive Overview | Sales Performance |
-| :---: | :---: |
-| ![Executive Overview](Images/executive.png) | ![Sales Performance](Images/sales.png) |
+### 1. Executive Overview
+![Executive Overview](Images/executive.png)
 
-| Product Performance | Cannibalization Analysis |
-| :---: | :---: |
-| ![Product Performance](Images/products.png) | ![Cannibalization Analysis](Images/cannibalization.png) |
+### 2. Sales Performance
+![Sales Performance](Images/sales.png)
 
-| Customer Insights | Pricing Analysis |
-| :---: | :---: |
-| ![Customer Insights](Images/customers.png) | ![Pricing Analysis](Images/pricing.png) |
+### 3. Product Performance
+![Product Performance](Images/products.png)
 
-| Marketing Analysis | Inventory Analysis |
-| :---: | :---: |
-| ![Marketing Analysis](Images/marketing.png) | ![Inventory Analysis](Images/inventory.png) |
+### 4. Cannibalization Analysis
+![Cannibalization Analysis](Images/cannibalization.png)
 
-| Regional Analysis | Strategic Recommendations |
-| :---: | :---: |
-| ![Regional Analysis](Images/regional.png) | ![Strategic Recommendations](Images/recommendations.png) |
+### 5. Customer Insights
+![Customer Insights](Images/customers.png)
+
+### 6. Pricing Analysis
+![Pricing Analysis](Images/pricing.png)
+
+### 7. Marketing Analysis
+![Marketing Analysis](Images/marketing.png)
+
+### 8. Inventory Analysis
+![Inventory Analysis](Images/inventory.png)
+
+### 9. Regional Analysis
+![Regional Analysis](Images/regional.png)
+
+### 10. Strategic Recommendations
+![Strategic Recommendations](Images/recommendations.png)
+
+### 11. Creator Profile
+![Creator Profile](Images/creator.png)
 
 ---
 

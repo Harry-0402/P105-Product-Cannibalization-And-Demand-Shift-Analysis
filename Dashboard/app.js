@@ -1140,42 +1140,54 @@ function renderSales() {
         options: { responsive: true }
     });
 
-    // Product group trends (exact sum of filtered products per group, no double-scaling)
+    // Product group comparison (Grouped Bar: Avg Monthly Sales Before vs After Launch)
     const ctx4 = getCtx('chart-sales-groups');
     let groups = Object.keys(D.group_trends);
     if (scope.isFiltered) {
         groups = [...new Set(prods.map(p => p.group))];
     }
-    const datasets = groups.map((g, i) => {
-        let groupMonthly;
+    const groupBeforeAvg = [];
+    const groupAfterAvg = [];
+    groups.forEach(g => {
+        let gMonths = D.group_trends[g]?.months || [];
+        let gSales = D.group_trends[g]?.sales || [];
         if (scope.isFiltered && D.monthly_by_product) {
             const gProds = prods.filter(p => p.group === g);
-            const raw = new Array(D.monthly_trends.months.length).fill(0);
+            gMonths = D.monthly_trends.months;
+            gSales = new Array(gMonths.length).fill(0);
             gProds.forEach(p => {
                 const pm = D.monthly_by_product[p.Product_ID];
-                if (pm) pm.sales.forEach((v, idx) => { raw[idx] += v; });
+                if (pm) pm.sales.forEach((v, idx) => { gSales[idx] += v; });
             });
-            groupMonthly = applyDateFilter(D.monthly_trends.months, raw);
-        } else {
-            groupMonthly = applyDateFilter(D.group_trends[g]?.months || [], D.group_trends[g]?.sales || []);
         }
-        return {
-            label: g,
-            data: padData(groupMonthly.months, groupMonthly.data.map(v => Math.round(v * scope.scaleOther)), scope.timeline.months),
-            borderColor: PALETTE[i % PALETTE.length],
-            backgroundColor: 'transparent',
-            borderWidth: 2,
-            hidden: false,
-            tension: 0.3
-        };
+        const filtered = applyDateFilter(gMonths, gSales);
+        const bVals = [], aVals = [];
+        filtered.months.forEach((m, idx) => {
+            const val = (filtered.data[idx] || 0) * scope.scaleOther;
+            if (m < '2024-06') bVals.push(val); else aVals.push(val);
+        });
+        groupBeforeAvg.push(bVals.length ? Math.round(bVals.reduce((x, y) => x + y, 0) / bVals.length) : 0);
+        groupAfterAvg.push(aVals.length ? Math.round(aVals.reduce((x, y) => x + y, 0) / aVals.length) : 0);
     });
     createChart('chart-sales-groups', ctx4, {
-        type: 'line',
-        data: { labels: scope.timeline.months, datasets },
-        options: { responsive: true, interaction: { mode: 'index', intersect: false } }
+        type: 'bar',
+        data: {
+            labels: groups,
+            datasets: [
+                { label: 'Before Launch (Avg/Mo)', data: groupBeforeAvg, backgroundColor: COLORS.blue, borderRadius: 5 },
+                { label: 'After Launch (Avg/Mo)',  data: groupAfterAvg,  backgroundColor: COLORS.teal, borderRadius: 5 }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: 'Avg Monthly Sales (Units)' } }
+            }
+        }
     });
-
 }
+
 
 function renderProducts() {
     const dataSource = window.filteredProducts || D.products;
