@@ -63,11 +63,11 @@ This analysis examines the impact of launching five new products (P1–P5) in Ju
 
 | KPI | Value |
 |-----|-------|
-| Total Sales | ~1,605,000 units |
+| Total Sales | 1,370,037 units |
 | Total Revenue | ~₹191M |
 | Average Selling Price | ~₹130.54 |
 | Average Rating | 4.00 / 5 |
-| Stock Availability | ~89.9% |
+| Stock Availability | 90.0% |
 | Products Analyzed | 25 |
 | Regions | 4 (North, South, East, West) |
 
@@ -96,7 +96,7 @@ This analysis examines the impact of launching five new products (P1–P5) in Ju
 | Deliverable | Location |
 |------------|----------|
 | Clean Dataset | `Data/cannibalization_cleaned.csv` |
-| Final Dataset | `Data/cannibalization_final.csv` |
+| Final Dataset | `Data/cannibalization_cleaned.csv` |
 | Phase 1 Notebook | `Notebooks/Phase1_Data_Understanding.ipynb` |
 | Phase 2 Notebook | `Notebooks/Phase2_Cleaning_Feature_Engineering.ipynb` |
 | Phase 3 Notebook | `Notebooks/Phase3_EDA_Visualization.ipynb` |

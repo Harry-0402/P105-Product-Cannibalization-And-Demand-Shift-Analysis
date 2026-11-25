@@ -85,7 +85,6 @@ const PAGE_TITLES_MAP = {
     inventory: { title: 'Inventory Analysis', subtitle: 'Stock availability, out-of-stock records, and supply chain' },
     regional: { title: 'Regional Analysis', subtitle: 'Geographic revenue breakdown and regional growth' },
     recommendations: { title: 'Strategic Recommendations', subtitle: 'Actionable insights and optimization strategies' },
-    dictionary: { title: 'Data Dictionary', subtitle: 'Dataset schema and metric formulas' },
     creator: { title: 'Creator Profile', subtitle: 'About the author and project portfolio' }
 };
 
@@ -99,6 +98,7 @@ function updateFilterHubPageHeader(pageId) {
 
 function switchTab(page) {
     if (!page) return;
+    window.currentPage = page;
     document.querySelectorAll('.nav-link').forEach(l => {
         if (l.dataset.page === page) {
             l.classList.add('active');
@@ -110,18 +110,25 @@ function switchTab(page) {
     const targetPage = document.getElementById(`page-${page}`);
     if (targetPage) targetPage.classList.add('active');
 
+    document.body.classList.toggle('page-no-controls', page === 'creator' || page === 'recommendations');
+    const creatorBtn = document.getElementById('sidebarCreatorBtn');
+    if (creatorBtn) creatorBtn.classList.toggle('is-active-page', page === 'creator');
+    window.__activeDockBtnId = (page === 'creator') ? 'sidebarCreatorBtn' : 'themeToggle';
+    setDockFocus(window.__activeDockBtnId);
+
     updateFilterHubPageHeader(page);
     renderPage(page);
-};
-
-function updateFilterHubPageHeader(pageId) {
-    const info = PAGE_TITLES_MAP[pageId] || PAGE_TITLES_MAP.executive;
-    const tEl = document.getElementById('filter-hub-page-title');
-    const sEl = document.getElementById('filter-hub-page-subtitle');
-    if (tEl) tEl.textContent = info.title;
-    if (sEl) sEl.textContent = info.subtitle;
+    if (window.lucide && window.lucide.createIcons) {
+        window.lucide.createIcons();
+    }
 }
 
+
+function formatSetLabel(setObj) {
+    if (!setObj || setObj.has('All') || setObj.size === 0) return null;
+    const arr = Array.from(setObj);
+    return arr.length <= 2 ? arr.join(', ') : `${arr.slice(0, 2).join(', ')} (+${arr.length - 2})`;
+}
 
 function updateChartTitles(scope) {
     const setText = (id, text) => {
@@ -129,28 +136,28 @@ function updateChartTitles(scope) {
         if (el) el.textContent = text;
     };
 
-    // Category Drill-Down Titles
-    if (window.filterCategory && window.filterCategory !== 'All') {
-        const cat = window.filterCategory;
-        setText('title-exec-category', `Sales by Product (${cat})`);
-        setText('title-sales-cat-ba', `Sales by Product — Before vs After (${cat})`);
-    } else if (window.filterProduct && window.filterProduct !== 'All') {
-        const p = window.filterProduct;
-        setText('title-exec-category', `Sales for Selected Product (${p})`);
-        setText('title-sales-cat-ba', `Sales — Before vs After (${p})`);
+    const catLabel = formatSetLabel(window.multiSelectState?.['filter-category']);
+    const prodLabel = formatSetLabel(window.multiSelectState?.['filter-product']);
+    const regLabel = formatSetLabel(window.multiSelectState?.['filter-region']);
+    const priceLabel = formatSetLabel(window.multiSelectState?.['filter-price']);
+
+    if (catLabel) {
+        setText('title-exec-category', `Sales by Product (${catLabel})`);
+        setText('title-sales-cat-ba', `Sales by Product — Before vs After (${catLabel})`);
+    } else if (prodLabel) {
+        setText('title-exec-category', `Sales for Selected Product (${prodLabel})`);
+        setText('title-sales-cat-ba', `Sales — Before vs After (${prodLabel})`);
     } else {
         setText('title-exec-category', 'Sales by Category');
         setText('title-sales-cat-ba', 'Sales by Category — Before vs After Launch');
     }
 
-    // Region Drill-Down Titles
-    if (window.filterRegion && window.filterRegion !== 'All') {
-        const reg = window.filterRegion;
-        setText('title-exec-region', `Sales by Sub-Category (${reg})`);
-        setText('title-sales-reg-ba', `Sales by Sub-Category — Before vs After (${reg})`);
-        setText('title-cust-region', `Customers by Sub-Category (${reg})`);
-        setText('title-reg-revenue', `Revenue by Sub-Category (${reg})`);
-        setText('title-reg-ba', `Sales — Before vs After by Sub-Category (${reg})`);
+    if (regLabel) {
+        setText('title-exec-region', `Sales by Category (${regLabel})`);
+        setText('title-sales-reg-ba', `Sales by Category — Before vs After (${regLabel})`);
+        setText('title-cust-region', `Customers by Category (${regLabel})`);
+        setText('title-reg-revenue', `Revenue by Category (${regLabel})`);
+        setText('title-reg-ba', `Sales — Before vs After (${regLabel})`);
     } else {
         setText('title-exec-region', 'Sales by Region');
         setText('title-sales-reg-ba', 'Sales by Region — Before vs After Launch');
@@ -159,11 +166,9 @@ function updateChartTitles(scope) {
         setText('title-reg-ba', 'Sales — Before vs After by Region');
     }
 
-    // Price Band Drill-Down Titles
-    if (window.filterPrice && window.filterPrice !== 'All') {
-        const pb = window.filterPrice;
-        setText('title-price-band', `Sales by Product (${pb})`);
-        setText('title-price-revenue', `Revenue by Product (${pb})`);
+    if (priceLabel) {
+        setText('title-price-band', `Sales by Product (${priceLabel})`);
+        setText('title-price-revenue', `Revenue by Product (${priceLabel})`);
     } else {
         setText('title-price-band', 'Sales by Price Band');
         setText('title-price-revenue', 'Revenue by Price Band');
@@ -606,54 +611,60 @@ function getPriceBandDataForProducts(prods) {
 // UNIFIED DATA SELECTOR PIPELINE (ONE-STOP REAL-TIME FILTER ENGINE)
 // ═══════════════════════════════════════════════════════════════════════
 
+function getActiveFilterArray(id) {
+    const s = window.multiSelectState && window.multiSelectState[id];
+    if (!s || s.has('All') || s.size === 0) return null;
+    return Array.from(s);
+}
+
+function getSegmentScale() {
+    const segs = getActiveFilterArray('filter-segment');
+    if (!segs) return 1;
+    const weights = { 'High Value': 0.4, 'Mid Value': 0.35, 'Budget': 0.25 };
+    return segs.reduce((sum, seg) => sum + (weights[seg] || 0), 0) || 1;
+}
+
 function getFilteredDatasetScope() {
     const prods = window.filteredProducts || D.products;
     const isFiltered = prods.length < D.products.length;
+    const activeDates = getActiveFilterArray('filter-date');
+    const activeRegions = getActiveFilterArray('filter-region');
+    const activeSegs = getActiveFilterArray('filter-segment');
+    const activePrices = getActiveFilterArray('filter-price');
 
-    // Secondary Filter Scale (Segment & Price)
-    let scaleOther = 1;
-    if (window.filterSegment && window.filterSegment !== 'All') {
-        scaleOther *= (window.filterSegment === 'High Value' ? 0.4 : (window.filterSegment === 'Mid Value' ? 0.35 : 0.25));
+    const segScale = getSegmentScale();
+    const hasSecondaryFilter = !!(activeDates || activeRegions || activeSegs || activePrices);
+
+    let regionRatio = 1;
+    if (activeRegions && D.region_by_product) {
+        let totalProdSales = 0;
+        let selectedRegSales = 0;
+        prods.forEach(p => {
+            totalProdSales += p.total_sales || 0;
+            const rp = D.region_by_product[p.Product_ID];
+            if (rp) {
+                activeRegions.forEach(r => {
+                    selectedRegSales += (rp[r]?.sales || 0);
+                });
+            }
+        });
+        regionRatio = totalProdSales > 0 ? (selectedRegSales / totalProdSales) : 0;
     }
 
-    // 1. Dynamic Monthly Timeline (Primary Key: Month)
-    const months = D.monthly_trends.months;
-    const globalSales = D.monthly_trends.sales;
-    const sumBeforeGlobal = globalSales.slice(0, 17).reduce((a, b) => a + b, 0) || 1;
-    const sumAfterGlobal = globalSales.slice(17, 24).reduce((a, b) => a + b, 0) || 1;
-    const weightsBefore = globalSales.slice(0, 17).map(v => v / sumBeforeGlobal);
-    const weightsAfter = globalSales.slice(17, 24).map(v => v / sumAfterGlobal);
+    const scaleOther = segScale * regionRatio;
 
-    const monthlySales = new Array(24).fill(0);
-    const monthlyRevenue = new Array(24).fill(0);
-    const timelineP6 = D.cannibalization?.timeline?.P6?.sales || [];
-    const timelineP4 = D.cannibalization?.timeline?.P4?.sales || [];
-    const timelineP5 = D.cannibalization?.timeline?.P5?.sales || [];
+    // 1. Exact Monthly Timeline from D.monthly_by_product
+    const months = D.monthly_trends.months;
+    const monthlySales = new Array(months.length).fill(0);
+    const monthlyRevenue = new Array(months.length).fill(0);
 
     prods.forEach(p => {
-        const pid = p.Product_ID;
-        const price = p.avg_price || 100;
-        for (let i = 0; i < 24; i++) {
-            let mSales = 0;
-            if (pid === 'P6' && timelineP6.length === 24) {
-                mSales = timelineP6[i];
-            } else if (pid === 'P4' && i >= 17 && timelineP4.length === 7) {
-                mSales = timelineP4[i - 17];
-            } else if (pid === 'P5' && i >= 17 && timelineP5.length === 7) {
-                mSales = timelineP5[i - 17];
-            } else if (i < 17) {
-                if (p.is_launched) {
-                    mSales = 0;
-                } else {
-                    const totalBeforeSales = (p.sales_before || p.avg_before || 25) * 17;
-                    mSales = totalBeforeSales * weightsBefore[i];
-                }
-            } else {
-                const totalAfterSales = (p.sales_after || p.avg_after || 25) * 7;
-                mSales = totalAfterSales * weightsAfter[i - 17];
+        const pm = D.monthly_by_product && D.monthly_by_product[p.Product_ID];
+        if (pm && pm.sales && pm.revenue) {
+            for (let i = 0; i < months.length; i++) {
+                monthlySales[i] += pm.sales[i] || 0;
+                monthlyRevenue[i] += pm.revenue[i] || 0;
             }
-            monthlySales[i] += mSales;
-            monthlyRevenue[i] += mSales * price;
         }
     });
 
@@ -662,66 +673,80 @@ function getFilteredDatasetScope() {
     const dateFiltSales = applyDateFilter(months, scaledSales);
     const dateFiltRev = applyDateFilter(months, scaledRevenue);
 
-    // 2. Dynamic Regional Matrix (Primary Key: Region vs Category Drill-Down)
-    const prodRegionMap = {
-        'P1':  { East: 0.55, North: 0.25, South: 0.12, West: 0.08 },
-        'P2':  { West: 0.48, South: 0.30, North: 0.14, East: 0.08 },
-        'P3':  { South: 0.50, North: 0.28, West: 0.14, East: 0.08 },
-        'P4':  { West: 0.52, South: 0.28, North: 0.12, East: 0.08 },
-        'P5':  { West: 0.46, South: 0.32, North: 0.14, East: 0.08 },
-        'P6':  { North: 0.48, East: 0.32, South: 0.12, West: 0.08 },
-        'P7':  { South: 0.42, North: 0.32, West: 0.16, East: 0.10 },
-        'P8':  { South: 0.44, North: 0.30, West: 0.16, East: 0.10 },
-        'P9':  { South: 0.45, North: 0.29, West: 0.16, East: 0.10 },
-        'P10': { West: 0.40, South: 0.32, North: 0.16, East: 0.12 },
-        'P11': { East: 0.60, North: 0.20, West: 0.12, South: 0.08 },
-        'P12': { South: 0.38, North: 0.32, West: 0.18, East: 0.12 },
-        'P13': { West: 0.42, South: 0.30, North: 0.16, East: 0.12 },
-        'P14': { North: 0.40, East: 0.30, South: 0.18, West: 0.12 },
-        'P15': { East: 0.50, West: 0.24, North: 0.16, South: 0.10 },
-        'P16': { North: 0.42, East: 0.28, South: 0.18, West: 0.12 },
-        'P17': { East: 0.48, West: 0.26, North: 0.16, South: 0.10 },
-        'P18': { West: 0.44, South: 0.28, North: 0.16, East: 0.12 },
-        'P19': { West: 0.38, North: 0.32, East: 0.18, South: 0.12 },
-        'P20': { East: 0.52, West: 0.24, North: 0.14, South: 0.10 },
-        'P21': { North: 0.44, East: 0.26, South: 0.18, West: 0.12 },
-        'P22': { West: 0.45, South: 0.29, North: 0.16, East: 0.10 },
-        'P23': { East: 0.56, West: 0.22, North: 0.14, South: 0.08 },
-        'P24': { West: 0.36, North: 0.32, East: 0.18, South: 0.14 },
-        'P25': { West: 0.35, North: 0.31, East: 0.20, South: 0.14 },
-    };
-
-    let regLabels = ['East', 'North', 'South', 'West'];
+    // 2. Exact Regional Matrix from D.region_by_product
+    const allRegions = ['East', 'North', 'South', 'West'];
+    let regLabels = allRegions;
     let regSales = [];
     let regRevenue = [];
+    let regSalesBefore = [];
+    let regSalesAfter = [];
+    let regCustomers = [];
 
-    if (window.filterRegion && window.filterRegion !== 'All') {
-        const rName = window.filterRegion;
+    if (activeRegions) {
         const uniqueCats = [...new Set(prods.map(p => p.category))];
-        regLabels = uniqueCats.map(c => `${c} (${rName})`);
-        regSales = uniqueCats.map(cat => {
-            const catProds = prods.filter(p => p.category === cat);
-            return Math.round(catProds.reduce((sum, p) => sum + (p.total_sales * (prodRegionMap[p.Product_ID]?.[rName] || 0.25) * scaleOther), 0));
-        });
-        regRevenue = uniqueCats.map(cat => {
-            const catProds = prods.filter(p => p.category === cat);
-            return Math.round(catProds.reduce((sum, p) => sum + (p.total_revenue * (prodRegionMap[p.Product_ID]?.[rName] || 0.25) * scaleOther), 0));
-        });
+        regLabels = uniqueCats;
+        regSales = uniqueCats.map(cat => Math.round(
+            prods.filter(p => p.category === cat).reduce((sum, p) => {
+                const rp = D.region_by_product?.[p.Product_ID];
+                const rSum = rp ? activeRegions.reduce((rs, r) => rs + (rp[r]?.sales || 0), 0) : 0;
+                return sum + rSum * segScale;
+            }, 0)
+        ));
+        regRevenue = uniqueCats.map(cat => Math.round(
+            prods.filter(p => p.category === cat).reduce((sum, p) => {
+                const rp = D.region_by_product?.[p.Product_ID];
+                const rSum = rp ? activeRegions.reduce((rs, r) => rs + (rp[r]?.revenue || 0), 0) : 0;
+                return sum + rSum * segScale;
+            }, 0)
+        ));
+        regSalesBefore = uniqueCats.map(cat => Math.round(
+            prods.filter(p => p.category === cat).reduce((sum, p) => {
+                const rp = D.region_by_product?.[p.Product_ID];
+                const rSum = rp ? activeRegions.reduce((rs, r) => rs + (rp[r]?.sales_before || 0), 0) : 0;
+                return sum + rSum * segScale;
+            }, 0)
+        ));
+        regSalesAfter = uniqueCats.map(cat => Math.round(
+            prods.filter(p => p.category === cat).reduce((sum, p) => {
+                const rp = D.region_by_product?.[p.Product_ID];
+                const rSum = rp ? activeRegions.reduce((rs, r) => rs + (rp[r]?.sales_after || 0), 0) : 0;
+                return sum + rSum * segScale;
+            }, 0)
+        ));
+        regCustomers = uniqueCats.map(cat => Math.round(
+            prods.filter(p => p.category === cat).reduce((sum, p) => {
+                const rp = D.region_by_product?.[p.Product_ID];
+                const rSum = rp ? activeRegions.reduce((rs, r) => rs + (rp[r]?.customers || 0), 0) : 0;
+                return sum + rSum * segScale;
+            }, 0)
+        ));
     } else {
-        const regSalesMap = { East: 0, North: 0, South: 0, West: 0 };
-        const regRevMap = { East: 0, North: 0, South: 0, West: 0 };
-        prods.forEach(p => {
-            const shares = prodRegionMap[p.Product_ID] || { East: 0.25, North: 0.25, South: 0.25, West: 0.25 };
-            ['East', 'North', 'South', 'West'].forEach(r => {
-                regSalesMap[r] += p.total_sales * shares[r] * scaleOther;
-                regRevMap[r] += p.total_revenue * shares[r] * scaleOther;
-            });
+        regSales = allRegions.map(r => Math.round(
+            prods.reduce((sum, p) => sum + ((D.region_by_product?.[p.Product_ID]?.[r]?.sales || 0) * segScale), 0)
+        ));
+        regRevenue = allRegions.map(r => Math.round(
+            prods.reduce((sum, p) => sum + ((D.region_by_product?.[p.Product_ID]?.[r]?.revenue || 0) * segScale), 0)
+        ));
+        regSalesBefore = allRegions.map(r => Math.round(
+            prods.reduce((sum, p) => sum + ((D.region_by_product?.[p.Product_ID]?.[r]?.sales_before || 0) * segScale), 0)
+        ));
+        regSalesAfter = allRegions.map(r => Math.round(
+            prods.reduce((sum, p) => sum + ((D.region_by_product?.[p.Product_ID]?.[r]?.sales_after || 0) * segScale), 0)
+        ));
+        regCustomers = allRegions.map(r => {
+            if (!isFiltered && !activeSegs) {
+                const rd = D.regions.find(item => item.Region === r);
+                return rd ? rd.customers : 0;
+            }
+            const rd = D.regions.find(item => item.Region === r);
+            const baseCust = rd ? rd.customers : 0;
+            const fullRegSales = rd ? rd.total_sales : 1;
+            const curRegSales = prods.reduce((sum, p) => sum + (D.region_by_product?.[p.Product_ID]?.[r]?.sales || 0), 0);
+            return Math.round(baseCust * (curRegSales / fullRegSales) * segScale);
         });
-        regSales = ['East', 'North', 'South', 'West'].map(r => Math.round(regSalesMap[r]));
-        regRevenue = ['East', 'North', 'South', 'West'].map(r => Math.round(regRevMap[r]));
     }
 
-    // 3. Dynamic Category Data (Primary Key: Category vs Product Drill-Down)
+    // 3. Dynamic Category Data (Category vs Product Drill-Down)
     const uniqueCats = [...new Set(prods.map(p => p.category))];
     let catLabels = uniqueCats;
     let catSales = [];
@@ -731,12 +756,12 @@ function getFilteredDatasetScope() {
         catSales = prods.map(p => Math.round(p.total_sales * scaleOther));
     } else {
         catLabels = uniqueCats;
-        catSales = catLabels.map(cat => {
-            return Math.round(prods.filter(p => p.category === cat).reduce((sum, p) => sum + (p.total_sales * scaleOther), 0));
-        });
+        catSales = catLabels.map(cat => Math.round(
+            prods.filter(p => p.category === cat).reduce((sum, p) => sum + (p.total_sales * scaleOther), 0)
+        ));
     }
 
-    // 4. Dynamic Price Bands (Primary Key: Price Band vs Product Drill-Down)
+    // 4. Dynamic Price Bands (Price Band vs Product Drill-Down)
     const bandsDef = [
         { band: 'Budget (0-50)',     min: 0,   max: 50 },
         { band: 'Mid (51-100)',      min: 50,  max: 100 },
@@ -747,13 +772,13 @@ function getFilteredDatasetScope() {
     let priceAvgSales = [];
     let priceRevenue = [];
 
-    if (window.filterPrice && window.filterPrice !== 'All') {
+    if (activePrices) {
         priceLabels = prods.map(p => p.Product_ID);
         priceRevenue = prods.map(p => Math.round(p.total_revenue * scaleOther));
-        priceAvgSales = prods.map(p => Number((p.total_sales / 24 * scaleOther).toFixed(2)));
+        priceAvgSales = prods.map(p => Number(((p.total_sales / 24) * scaleOther).toFixed(2)));
     } else {
         bandsDef.forEach(b => {
-            let matching = prods.filter(p => p.avg_price > b.min && p.avg_price <= b.max);
+            const matching = prods.filter(p => p.avg_price > b.min && p.avg_price <= b.max);
             const totalR = matching.reduce((sum, p) => sum + p.total_revenue, 0) * scaleOther;
             const totalS = matching.reduce((sum, p) => sum + p.total_sales, 0) * scaleOther;
             priceRevenue.push(Math.round(totalR));
@@ -764,7 +789,11 @@ function getFilteredDatasetScope() {
     return {
         prods,
         isFiltered,
+        hasSecondaryFilter,
+        segScale,
+        regionRatio,
         scaleOther,
+        activeRegions,
         timeline: {
             months: dateFiltSales.months,
             sales: dateFiltSales.data,
@@ -773,7 +802,10 @@ function getFilteredDatasetScope() {
         regions: {
             labels: regLabels,
             sales: regSales,
-            revenue: regRevenue
+            revenue: regRevenue,
+            salesBefore: regSalesBefore,
+            salesAfter: regSalesAfter,
+            customers: regCustomers
         },
         categories: {
             labels: catLabels,
@@ -792,11 +824,12 @@ function getFilteredDatasetScope() {
 // ═══════════════════════════════════════════════════════════════════════
 
 function applyDateFilter(months, dataArray) {
-    if (!window.filterDate || window.filterDate === 'All') return { months, data: dataArray };
+    const activeDates = getActiveFilterArray('filter-date');
+    if (!activeDates) return { months, data: dataArray };
     const filteredMonths = [];
     const filteredData = [];
     months.forEach((m, i) => {
-        if (m.startsWith(window.filterDate)) {
+        if (activeDates.some(d => m.startsWith(d))) {
             filteredMonths.push(m);
             if (dataArray && dataArray.length > i) {
                 filteredData.push(dataArray[i]);
@@ -806,142 +839,117 @@ function applyDateFilter(months, dataArray) {
     return { months: filteredMonths, data: filteredData };
 }
 
-function getScales(prods) {
-    let productScale = 1;
-    if (prods.length < D.products.length) {
-        let total_sales = prods.reduce((sum, p) => sum + p.total_sales, 0);
-        productScale = total_sales / D.kpis.total_sales;
-    }
-    let dateScale = 1;
-    if (window.filterDate && window.filterDate !== 'All') {
-        const dFilt = applyDateFilter(D.monthly_trends.months, D.monthly_trends.sales);
-        const dateSales = dFilt.data.reduce((a, b) => a + b, 0);
-        const allSales = D.monthly_trends.sales.reduce((a, b) => a + b, 0);
-        dateScale = (dateSales / allSales) || 1;
-    }
-    let regionScale = 1;
-    if (window.filterRegion && window.filterRegion !== 'All') {
-        const rData = D.regions.find(r => r.Region === window.filterRegion);
-        if (rData) regionScale = rData.total_sales / D.kpis.total_sales;
-    }
-    let segmentScale = 1;
-    if (window.filterSegment && window.filterSegment !== 'All') {
-        segmentScale = window.filterSegment === 'High Value' ? 0.4 : (window.filterSegment === 'Mid Value' ? 0.35 : 0.25);
-    }
-    let priceScale = 1;
-    if (window.filterPrice && window.filterPrice !== 'All') {
-        priceScale = window.filterPrice === 'Low' ? 0.2 : (window.filterPrice === 'Medium' ? 0.5 : 0.3);
-    }
-    const otherScale = regionScale * segmentScale * priceScale;
-    return {
-        product: productScale,
-        date: dateScale,
-        other: otherScale,
-        chart: productScale * otherScale,
-        kpi: productScale * dateScale * otherScale
-    };
-}
-
 function renderExecutive() {
     const scope = getFilteredDatasetScope();
     updateChartTitles(scope);
     const prods = scope.prods;
-    const isFiltered = scope.isFiltered;
+    const isUnfiltered = !scope.isFiltered && !scope.hasSecondaryFilter;
 
-    // 1. Dynamic Total Sales & Total Revenue from active Scope Timeline
+    // 1. Exact Total Sales & Total Revenue from active Scope Timeline
     const totalSales = scope.timeline.sales.reduce((a, b) => a + b, 0);
     const totalRevenue = scope.timeline.revenue.reduce((a, b) => a + b, 0);
 
-    // 2. Dynamic Weighted Average Price
-    const avgPrice = totalSales > 0 
-        ? (totalRevenue / totalSales) 
-        : (prods.length ? prods.reduce((sum, p) => sum + p.avg_price, 0) / prods.length : D.kpis.avg_price);
+    // 2. Weighted Average Price
+    const avgPrice = isUnfiltered
+        ? D.kpis.avg_price
+        : (totalSales > 0 ? (totalRevenue / totalSales) : (prods.length ? prods.reduce((sum, p) => sum + p.avg_price, 0) / prods.length : D.kpis.avg_price));
 
-    // 3. Dynamic Sales Growth % (Comparing timeline pre-launch vs post-launch)
-    const salesBeforeArr = scope.timeline.sales.slice(0, 17);
-    const salesAfterArr = scope.timeline.sales.slice(17, 24);
-    const avgMonthlyBefore = salesBeforeArr.reduce((a, b) => a + b, 0) / 17;
-    const avgMonthlyAfter = salesAfterArr.reduce((a, b) => a + b, 0) / 7;
-    const salesGrowth = avgMonthlyBefore > 0 
-        ? (((avgMonthlyAfter - avgMonthlyBefore) / avgMonthlyBefore) * 100)
-        : (prods.length ? prods.reduce((sum, p) => sum + (p.growth_pct || 0), 0) / prods.length : D.kpis.sales_growth);
+    // 3. Sales & Revenue Growth % (Split dynamically at launch month '2024-06')
+    let salesGrowth = null;
+    let revGrowth = null;
+    let growthSubtext = null;
 
-    // 4. Dynamic Cannibalization Rate
-    let cannRate = 0.0;
-    const legacyProds = prods.filter(p => !p.is_launched);
-    if (legacyProds.length > 0) {
-        const totalDrop = legacyProds.reduce((sum, p) => {
-            const drop = (p.avg_before && p.avg_after < p.avg_before) 
-                ? ((p.avg_before - p.avg_after) / p.avg_before) * 100 
-                : (p.growth_pct < 0 ? Math.abs(p.growth_pct) : 0);
-            return sum + drop;
-        }, 0);
-        cannRate = totalDrop / legacyProds.length;
+    if (isUnfiltered) {
+        salesGrowth = D.kpis.sales_growth;
+        revGrowth = D.kpis.revenue_growth;
     } else {
-        cannRate = 0.0; // Newly launched products
+        const beforeSales = [], afterSales = [], beforeRev = [], afterRev = [];
+        scope.timeline.months.forEach((m, idx) => {
+            if (m < '2024-06') {
+                beforeSales.push(scope.timeline.sales[idx] || 0);
+                beforeRev.push(scope.timeline.revenue[idx] || 0);
+            } else {
+                afterSales.push(scope.timeline.sales[idx] || 0);
+                afterRev.push(scope.timeline.revenue[idx] || 0);
+            }
+        });
+        if (beforeSales.length > 0 && afterSales.length > 0) {
+            const avgSB = beforeSales.reduce((a, b) => a + b, 0) / beforeSales.length;
+            const avgSA = afterSales.reduce((a, b) => a + b, 0) / afterSales.length;
+            const avgRB = beforeRev.reduce((a, b) => a + b, 0) / beforeRev.length;
+            const avgRA = afterRev.reduce((a, b) => a + b, 0) / afterRev.length;
+            salesGrowth = avgSB > 0 ? ((avgSA - avgSB) / avgSB) * 100 : null;
+            revGrowth = avgRB > 0 ? ((avgRA - avgRB) / avgRB) * 100 : null;
+        } else if (afterSales.length === 0) {
+            growthSubtext = 'Pre-launch period';
+        } else {
+            growthSubtext = 'Post-launch period';
+        }
     }
 
-    // 5. Dynamic Customer Retention Rate
-    let retentionRate = 85.7;
-    if (prods.length > 0) {
+    // 4. Cannibalization Rate
+    let cannRate = D.kpis.cann_rate;
+    if (!isUnfiltered) {
+        const legacyProds = prods.filter(p => !p.is_launched);
+        if (legacyProds.length > 0) {
+            const totalDrop = legacyProds.reduce((sum, p) => {
+                const drop = (p.avg_before && p.avg_after < p.avg_before)
+                    ? ((p.avg_before - p.avg_after) / p.avg_before) * 100
+                    : (p.growth_pct < 0 ? Math.abs(p.growth_pct) : 0);
+                return sum + drop;
+            }, 0);
+            cannRate = totalDrop / legacyProds.length;
+        } else {
+            cannRate = 0.0;
+        }
+    }
+
+    // 5. Customer Retention Rate
+    let retentionRate = D.kpis.retention_rate;
+    if (!isUnfiltered && prods.length > 0) {
         const sumRet = prods.reduce((sum, p) => {
             if (p.is_launched) return sum + 92.4;
-            const drop = (p.avg_before && p.avg_after < p.avg_before) 
-                ? ((p.avg_before - p.avg_after) / p.avg_before) * 100 
+            const drop = (p.avg_before && p.avg_after < p.avg_before)
+                ? ((p.avg_before - p.avg_after) / p.avg_before) * 100
                 : (p.growth_pct < 0 ? Math.abs(p.growth_pct) : 0);
-            return sum + Math.max(62.0, 85.7 - (drop * 0.35));
+            return sum + Math.max(62.0, D.kpis.retention_rate - (drop * 0.35));
         }, 0);
         retentionRate = sumRet / prods.length;
     }
 
-    // 6. Dynamic Average Rating
-    const avgRating = prods.length > 0 
-        ? prods.reduce((sum, p) => sum + (p.avg_rating || 4.0), 0) / prods.length 
-        : D.kpis.avg_rating;
+    // 6. Average Rating
+    const avgRating = isUnfiltered
+        ? D.kpis.avg_rating
+        : (prods.length > 0 ? prods.reduce((sum, p) => sum + (p.avg_rating || 4.0), 0) / prods.length : D.kpis.avg_rating);
 
-    // 7. Dynamic Marketing ROI
-    let mktRoi = 1.29;
-    if (prods.length > 0) {
-        const sumRoi = prods.reduce((sum, p) => {
-            const m = D.marketing ? D.marketing.find(item => item.product === p.Product_ID) : null;
-            if (m && m.roi) return sum + m.roi;
-            const estSpend = (p.total_revenue * scope.scaleOther) * 0.22;
-            return sum + (estSpend > 0 ? ((p.total_revenue * scope.scaleOther) / estSpend) : 1.29);
-        }, 0);
-        mktRoi = sumRoi / prods.length;
+    // 7. Marketing ROI (Exact sum(revenue) / sum(mkt_spend))
+    let mktRoi = D.kpis.mkt_roi;
+    if (!isUnfiltered && prods.length > 0) {
+        const totRev = prods.reduce((s, p) => s + (p.total_revenue || 0), 0);
+        const totSpend = prods.reduce((s, p) => s + (p.mkt_spend || 0), 0);
+        mktRoi = totSpend > 0 ? (totRev / totSpend) : D.kpis.mkt_roi;
     }
 
-    // 8. Dynamic Stock Availability Rate
-    let stockAvail = 90.0;
-    if (prods.length > 0) {
-        const sumAvail = prods.reduce((sum, p) => {
-            if (p.is_launched) return sum + 95.8;
-            if (p.Product_ID === 'P6') return sum + 84.5;
-            if (p.Product_ID === 'P14' || p.Product_ID === 'P16') return sum + 87.2;
-            return sum + Math.max(82.0, 92.5 - (p.avg_sales * 0.12));
-        }, 0);
-        stockAvail = sumAvail / prods.length;
+    // 8. Stock Availability Rate
+    let stockAvail = D.kpis.stock_avail;
+    if (!isUnfiltered && prods.length > 0) {
+        stockAvail = prods.reduce((s, p) => s + (p.stock_avail ?? D.kpis.stock_avail), 0) / prods.length;
     }
 
-    const aiText = document.getElementById('aiNarrativeText');
-    if (aiText) {
-        aiText.innerHTML = generateAINarrative(prods);
-    }
-
+    const isDark = document.body.classList.contains('dark-theme');
     const grid = document.getElementById('kpi-grid');
     if (grid) {
         grid.innerHTML = '';
-        grid.appendChild(createKPI('Total Sales', fmtFull(totalSales) + ' units', salesGrowth, 'blue', 'growth', 'package', null));
-        grid.appendChild(createKPI('Total Revenue', '₹' + fmt(totalRevenue), salesGrowth, 'teal', 'growth', 'dollar-sign', null));
+        grid.appendChild(createKPI('Total Sales', fmtFull(totalSales) + ' units', salesGrowth, 'blue', 'growth', 'package', growthSubtext));
+        grid.appendChild(createKPI('Total Revenue', '₹' + fmt(totalRevenue), revGrowth, 'teal', 'growth', 'dollar-sign', growthSubtext));
         grid.appendChild(createKPI('Avg Price', '₹' + avgPrice.toFixed(2), null, 'amber', '', 'tag', prods.length === 1 ? 'Product unit price' : 'Weighted average price'));
-        grid.appendChild(createKPI('Cannibalization Rate', cannRate.toFixed(1) + '%', null, 'red', '', 'git-compare', prods.length === 1 ? (prods[0].is_launched ? 'Newly Launched Line' : 'Cannibalized Line') : (prods.length < D.products.length ? 'Filtered scope rate' : 'Impact rate')));
-        grid.appendChild(createKPI('Customer Retention', retentionRate.toFixed(1) + '%', null, 'green', '', 'users', prods.length < D.products.length ? 'Active scope retention' : 'Active retention rate'));
+        grid.appendChild(createKPI('Cannibalization Rate', cannRate.toFixed(1) + '%', null, 'red', '', 'git-compare', prods.length === 1 ? (prods[0].is_launched ? 'Newly Launched Line' : 'Cannibalized Line') : (isUnfiltered ? 'Impact rate' : 'Filtered scope rate')));
+        grid.appendChild(createKPI('Customer Retention', retentionRate.toFixed(1) + '%', null, 'green', '', 'users', isUnfiltered ? 'Active retention rate' : 'Active scope retention'));
         grid.appendChild(createKPI('Avg Rating', avgRating.toFixed(2) + ' / 5', null, 'purple', '', 'star', 'Out of 5.0 scale'));
         grid.appendChild(createKPI('Marketing ROI', mktRoi.toFixed(2) + 'x', null, 'cyan', '', 'target', 'Revenue per ₹ spend'));
-        grid.appendChild(createKPI('Stock Availability', stockAvail.toFixed(1) + '%', null, 'pink', '', 'boxes', prods.length < D.products.length ? 'In-stock rate (Scope)' : 'In-stock rate'));
+        grid.appendChild(createKPI('Stock Availability', stockAvail.toFixed(1) + '%', null, 'pink', '', 'boxes', isUnfiltered ? 'In-stock rate' : 'In-stock rate (Scope)'));
     }
 
-    // Monthly trend dual axis - 100% UNIFIED SCOPE
     const ctx = getCtx('chart-exec-trend');
     if (ctx) {
         createChart('chart-exec-trend', ctx, {
@@ -977,7 +985,6 @@ function renderExecutive() {
         });
     }
 
-    // Category donut - UNIFIED SCOPE
     const ctxCat = getCtx('chart-exec-category');
     if (ctxCat) {
         createChart('chart-exec-category', ctxCat, {
@@ -987,7 +994,7 @@ function renderExecutive() {
                 datasets: [{
                     data: scope.categories.sales,
                     backgroundColor: PALETTE,
-                    borderColor: document.documentElement.classList.contains('dark-theme') ? '#1e293b' : '#ffffff',
+                    borderColor: isDark ? '#1e293b' : '#ffffff',
                     borderWidth: 2
                 }]
             },
@@ -1015,7 +1022,6 @@ function renderExecutive() {
         });
     }
 
-    // Region donut - UNIFIED SCOPE
     const ctxReg = getCtx('chart-exec-region');
     if (ctxReg) {
         createChart('chart-exec-region', ctxReg, {
@@ -1025,7 +1031,7 @@ function renderExecutive() {
                 datasets: [{
                     data: scope.regions.sales,
                     backgroundColor: PALETTE,
-                    borderColor: document.documentElement.classList.contains('dark-theme') ? '#1e293b' : '#ffffff',
+                    borderColor: isDark ? '#1e293b' : '#ffffff',
                     borderWidth: 2
                 }]
             },
@@ -1052,6 +1058,7 @@ function renderExecutive() {
             }
         });
     }
+
 }
 
 function renderSales() {
@@ -1059,7 +1066,25 @@ function renderSales() {
     updateChartTitles(scope);
     const prods = scope.prods;
 
-    // Monthly sales bar chart - UNIFIED SCOPE
+    const salesGrid = document.getElementById('sales-kpis');
+    if (salesGrid) {
+        const totSales = scope.timeline.sales.reduce((a, b) => a + b, 0);
+        const beforeArr = [], afterArr = [];
+        let peakVal = -1, peakMonth = 'N/A';
+        scope.timeline.months.forEach((m, i) => {
+            const v = scope.timeline.sales[i] || 0;
+            if (v > peakVal) { peakVal = v; peakMonth = m; }
+            if (m < '2024-06') beforeArr.push(v); else afterArr.push(v);
+        });
+        const avgBefore = beforeArr.length ? Math.round(beforeArr.reduce((a, b) => a + b, 0) / beforeArr.length) : 0;
+        const avgAfter = afterArr.length ? Math.round(afterArr.reduce((a, b) => a + b, 0) / afterArr.length) : 0;
+        salesGrid.innerHTML = '';
+        salesGrid.appendChild(createKPI('Total Units Sold', fmtFull(totSales), null, 'blue', '', 'shopping-cart', `${scope.timeline.months.length} active months`));
+        salesGrid.appendChild(createKPI('Pre-Launch Avg / Mo', avgBefore ? fmtFull(avgBefore) + ' units' : 'N/A', null, 'teal', '', 'calendar', `${beforeArr.length} pre-launch months`));
+        salesGrid.appendChild(createKPI('Post-Launch Avg / Mo', avgAfter ? fmtFull(avgAfter) + ' units' : 'N/A', null, 'amber', '', 'trending-up', `${afterArr.length} post-launch months`));
+        salesGrid.appendChild(createKPI('Peak Sales Month', peakMonth, null, 'purple', '', 'award', peakVal >= 0 ? fmtFull(peakVal) + ' units' : 'No data'));
+    }
+
     const ctx1 = getCtx('chart-sales-monthly');
     const launchIdx = scope.timeline.months.indexOf('2024-06');
     createChart('chart-sales-monthly', ctx1, {
@@ -1077,50 +1102,66 @@ function renderSales() {
         options: { responsive: true, scales: { y: { title: { display: true, text: 'Sales (Units)' } } } }
     });
 
-    // Category before/after
+    // Category / Product before vs after (exact sales_before / sales_after)
     const ctx2 = getCtx('chart-sales-cat-ba');
-    const catBefore = scope.categories.labels.map(cat => prods.filter(p => p.category === cat).reduce((sum, p) => sum + (p.sales_before * scope.scaleOther), 0));
-    const catAfter = scope.categories.labels.map(cat => prods.filter(p => p.category === cat).reduce((sum, p) => sum + (p.sales_after * scope.scaleOther), 0));
+    const uniqueCats = [...new Set(prods.map(p => p.category))];
+    const isProdDrill = uniqueCats.length === 1 || prods.length <= 5;
+    const catBefore = scope.categories.labels.map(lbl => {
+        const subset = isProdDrill ? prods.filter(p => p.Product_ID === lbl) : prods.filter(p => p.category === lbl);
+        return Math.round(subset.reduce((sum, p) => sum + ((p.sales_before || 0) * scope.scaleOther), 0));
+    });
+    const catAfter = scope.categories.labels.map(lbl => {
+        const subset = isProdDrill ? prods.filter(p => p.Product_ID === lbl) : prods.filter(p => p.category === lbl);
+        return Math.round(subset.reduce((sum, p) => sum + ((p.sales_after || 0) * scope.scaleOther), 0));
+    });
     createChart('chart-sales-cat-ba', ctx2, {
         type: 'bar',
         data: {
             labels: scope.categories.labels,
             datasets: [
-                { label: 'Before Launch', data: catBefore.map(v => Math.round(v)), backgroundColor: COLORS.blue },
-                { label: 'After Launch',  data: catAfter.map(v => Math.round(v)),  backgroundColor: COLORS.teal }
+                { label: 'Before Launch', data: catBefore, backgroundColor: COLORS.blue },
+                { label: 'After Launch',  data: catAfter,  backgroundColor: COLORS.teal }
             ]
         },
         options: { responsive: true }
     });
 
-    // Region before/after - UNIFIED SCOPE
+    // Region before/after (exact from D.region_by_product)
     const ctx3 = getCtx('chart-sales-reg-ba');
-    const regBefore = scope.regions.sales.map((s, i) => Math.round(s * 0.48 / 24));
-    const regAfter = scope.regions.sales.map((s, i) => Math.round(s * 0.52 / 24));
     createChart('chart-sales-reg-ba', ctx3, {
         type: 'bar',
         data: {
             labels: scope.regions.labels,
             datasets: [
-                { label: 'Before Launch', data: regBefore, backgroundColor: COLORS.blue },
-                { label: 'After Launch',  data: regAfter,  backgroundColor: COLORS.teal }
+                { label: 'Before Launch', data: scope.regions.salesBefore, backgroundColor: COLORS.blue },
+                { label: 'After Launch',  data: scope.regions.salesAfter,  backgroundColor: COLORS.teal }
             ]
         },
         options: { responsive: true }
     });
 
-    // Product group trends
+    // Product group trends (exact sum of filtered products per group, no double-scaling)
     const ctx4 = getCtx('chart-sales-groups');
     let groups = Object.keys(D.group_trends);
     if (scope.isFiltered) {
         groups = [...new Set(prods.map(p => p.group))];
     }
-    const productScale = prods.reduce((sum, p) => sum + p.total_sales, 0) / D.kpis.total_sales;
     const datasets = groups.map((g, i) => {
-        const trendFilt = applyDateFilter(D.group_trends[g]?.months || [], D.group_trends[g]?.sales || []);
+        let groupMonthly;
+        if (scope.isFiltered && D.monthly_by_product) {
+            const gProds = prods.filter(p => p.group === g);
+            const raw = new Array(D.monthly_trends.months.length).fill(0);
+            gProds.forEach(p => {
+                const pm = D.monthly_by_product[p.Product_ID];
+                if (pm) pm.sales.forEach((v, idx) => { raw[idx] += v; });
+            });
+            groupMonthly = applyDateFilter(D.monthly_trends.months, raw);
+        } else {
+            groupMonthly = applyDateFilter(D.group_trends[g]?.months || [], D.group_trends[g]?.sales || []);
+        }
         return {
             label: g,
-            data: padData(trendFilt.months, trendFilt.data.map(v => Math.round(v * productScale * scope.scaleOther)), scope.timeline.months),
+            data: padData(groupMonthly.months, groupMonthly.data.map(v => Math.round(v * scope.scaleOther)), scope.timeline.months),
             borderColor: PALETTE[i % PALETTE.length],
             backgroundColor: 'transparent',
             borderWidth: 2,
@@ -1133,16 +1174,26 @@ function renderSales() {
         data: { labels: scope.timeline.months, datasets },
         options: { responsive: true, interaction: { mode: 'index', intersect: false } }
     });
+
 }
-
-
-// ═══════════════════════════════════════════════════════════════════════
-// PAGE 3: PRODUCT PERFORMANCE
-// ═══════════════════════════════════════════════════════════════════════
 
 function renderProducts() {
     const dataSource = window.filteredProducts || D.products;
     const prods = [...dataSource].sort((a, b) => b.total_revenue - a.total_revenue);
+
+    const prodGrid = document.getElementById('prod-kpis');
+    if (prodGrid) {
+        const topProd = prods[0];
+        const existing = prods.filter(p => !p.is_launched);
+        const fastest = [...existing].sort((a, b) => b.growth_pct - a.growth_pct)[0];
+        const worst = [...existing].sort((a, b) => a.growth_pct - b.growth_pct)[0];
+        const launchedCount = prods.filter(p => p.is_launched).length;
+        prodGrid.innerHTML = '';
+        prodGrid.appendChild(createKPI('Active Products', String(prods.length), null, 'blue', '', 'package', `${launchedCount} launched, ${existing.length} existing`));
+        prodGrid.appendChild(createKPI('Top Revenue Product', topProd ? topProd.Product_ID : 'N/A', null, 'teal', '', 'trophy', topProd ? `₹${fmt(topProd.total_revenue)} (${topProd.category})` : ''));
+        prodGrid.appendChild(createKPI('Fastest Growing', fastest ? fastest.Product_ID : 'N/A', fastest ? fastest.growth_pct : null, 'green', 'growth', 'trending-up', fastest ? null : 'No existing products'));
+        prodGrid.appendChild(createKPI('Most Cannibalized', worst ? worst.Product_ID : 'N/A', worst ? worst.growth_pct : null, 'red', 'growth', 'trending-down', worst ? null : 'No existing products'));
+    }
 
     // Revenue bar
     const ctx1 = getCtx('chart-prod-revenue');
@@ -1226,29 +1277,38 @@ function renderCannibalization() {
     const scope = getFilteredDatasetScope();
     const c = D.cannibalization;
     const prods = scope.prods;
-    const prodScale = (prods.length / D.products.length) * scope.scaleOther;
+    const isUnfiltered = !scope.isFiltered && !scope.hasSecondaryFilter;
+    const hasP6 = prods.some(p => p.Product_ID === 'P6');
+    const hasP4 = prods.some(p => p.Product_ID === 'P4');
+    const hasP5 = prods.some(p => p.Product_ID === 'P5');
 
-    // Dynamic Cannibalization Rate
-    let dynCannRate = 0.0;
-    const legacyProds = prods.filter(p => !p.is_launched);
-    if (legacyProds.length > 0) {
-        const totalDrop = legacyProds.reduce((sum, p) => {
-            const drop = (p.avg_before && p.avg_after < p.avg_before) 
-                ? ((p.avg_before - p.avg_after) / p.avg_before) * 100 
-                : (p.growth_pct < 0 ? Math.abs(p.growth_pct) : 0);
-            return sum + drop;
-        }, 0);
-        dynCannRate = totalDrop / legacyProds.length;
+    let dynCannRate = c.rate;
+    if (!isUnfiltered) {
+        const legacyProds = prods.filter(p => !p.is_launched);
+        if (legacyProds.length > 0) {
+            const totalDrop = legacyProds.reduce((sum, p) => {
+                const drop = (p.avg_before && p.avg_after < p.avg_before)
+                    ? ((p.avg_before - p.avg_after) / p.avg_before) * 100
+                    : (p.growth_pct < 0 ? Math.abs(p.growth_pct) : 0);
+                return sum + drop;
+            }, 0);
+            dynCannRate = totalDrop / legacyProds.length;
+        } else {
+            dynCannRate = 0.0;
+        }
     }
 
-    // KPI cards
+    const p6LossVal = hasP6 ? Math.round(c.p6_loss * scope.scaleOther) : 0;
+    const p4p5GainVal = (hasP4 || hasP5) ? Math.round(c.p4p5_gain * scope.scaleOther) : 0;
+    const switchRateVal = isUnfiltered ? c.switching_rate : (hasP6 || hasP4 || hasP5 ? c.switching_rate : 0.0);
+
     const grid = document.getElementById('cann-kpis');
     if (grid) {
         grid.innerHTML = '';
-        grid.appendChild(createKPI('Cannibalization Rate', dynCannRate.toFixed(1) + '%', null, 'red', '', 'git-compare', prods.length < D.products.length ? 'Filtered Scope Impact' : 'Portfolio Impact'));
-        grid.appendChild(createKPI('P6 Sales Lost', fmtFull(Math.round(c.p6_loss * prodScale)) + ' units', null, 'amber', '', 'trending-down', 'Impact on P6 Baseline'));
-        grid.appendChild(createKPI('P4+P5 Sales Gained', fmtFull(Math.round(c.p4p5_gain * prodScale)) + ' units', null, 'teal', '', 'trending-up', 'New Line Gain'));
-        grid.appendChild(createKPI('Customer Switching', (dynCannRate > 0 ? (dynCannRate * 0.78) : 14.3).toFixed(1) + '%', null, 'purple', '', 'refresh-cw', 'Switching Ratio'));
+        grid.appendChild(createKPI('Cannibalization Rate', dynCannRate.toFixed(1) + '%', null, 'red', '', 'git-compare', isUnfiltered ? 'Portfolio Impact' : 'Filtered Scope Impact'));
+        grid.appendChild(createKPI('P6 Sales Lost', fmtFull(p6LossVal) + ' units', null, 'amber', '', 'trending-down', 'Impact on P6 Baseline'));
+        grid.appendChild(createKPI('P4+P5 Sales Gained', fmtFull(p4p5GainVal) + ' units', null, 'teal', '', 'trending-up', 'New Line Gain'));
+        grid.appendChild(createKPI('Customer Switching', switchRateVal.toFixed(1) + '%', null, 'purple', '', 'refresh-cw', 'Switching Ratio'));
     }
 
     // Timeline
@@ -1259,9 +1319,7 @@ function renderCannibalization() {
     const p4Filt = applyDateFilter(t.P4.months, t.P4.sales);
     const p5Filt = applyDateFilter(t.P5.months, t.P5.sales);
 
-    const hasP6 = prods.some(p => p.Product_ID === 'P6');
-    const hasP4 = prods.some(p => p.Product_ID === 'P4');
-    const hasP5 = prods.some(p => p.Product_ID === 'P5');
+    // hasP6, hasP4, hasP5 computed above
 
     createChart('chart-cann-timeline', ctx1, {
         type: 'line',
@@ -1284,9 +1342,9 @@ function renderCannibalization() {
         data: {
             labels: ['Switched to P4/P5', 'Stayed with P6', 'Lost'],
             datasets: [{
-                data: [Math.round(m.switched * prodScale), Math.round(m.stayed * prodScale), Math.round(m.lost * prodScale)],
+                data: hasP6 ? [Math.round(m.switched * scope.scaleOther), Math.round(m.stayed * scope.scaleOther), Math.round(m.lost * scope.scaleOther)] : [0, 0, 0],
                 backgroundColor: [COLORS.red, COLORS.green, COLORS.amber],
-                borderColor: document.documentElement.classList.contains('dark-theme') ? '#1e293b' : '#ffffff',
+                borderColor: document.body.classList.contains('dark-theme') ? '#1e293b' : '#ffffff',
                 borderWidth: 2
             }]
         },
@@ -1328,6 +1386,42 @@ function renderCannibalization() {
         },
         options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
     });
+
+    // Product x Month Demand Shift Heatmap
+    const hmWrap = document.getElementById('cann-heatmap-wrapper');
+    if (hmWrap && D.cannibalization.product_month_heatmap) {
+        const hm = D.cannibalization.product_month_heatmap;
+        const activeIds = new Set(prods.map(p => p.Product_ID));
+        const activeDates = getActiveFilterArray('filter-date');
+        const monthIndices = hm.months.map((m, i) => (!activeDates || activeDates.some(d => m.startsWith(d))) ? i : -1).filter(i => i !== -1);
+        const rows = hm.rows.filter(r => activeIds.has(r.product)).slice(0, 12);
+        const isDark = document.body.classList.contains('dark-theme');
+
+        let hHtml = '<table class="heatmap-table"><thead><tr><th class="row-head">Product</th>';
+        monthIndices.forEach(idx => {
+            hHtml += `<th>${hm.months[idx].slice(2)}</th>`;
+        });
+        hHtml += '</tr></thead><tbody>';
+
+        rows.forEach(r => {
+            hHtml += `<tr><th class="row-head">${r.product}</th>`;
+            monthIndices.forEach(idx => {
+                const v = r.pct_change[idx];
+                let bg, fg;
+                if (v <= -25) { bg = 'rgba(239, 68, 68, 0.78)'; fg = '#fff'; }
+                else if (v <= -10) { bg = 'rgba(239, 68, 68, 0.42)'; fg = isDark ? '#fff' : '#7f1d1d'; }
+                else if (v < 0) { bg = 'rgba(239, 68, 68, 0.16)'; fg = isDark ? '#fecaca' : '#991b1b'; }
+                else if (v >= 25) { bg = 'rgba(20, 184, 166, 0.78)'; fg = '#fff'; }
+                else if (v > 5) { bg = 'rgba(20, 184, 166, 0.35)'; fg = isDark ? '#fff' : '#115e59'; }
+                else { bg = isDark ? 'rgba(148,163,184,0.12)' : 'rgba(148,163,184,0.14)'; fg = isDark ? '#cbd5e1' : '#475569'; }
+                hHtml += `<td><div class="heatmap-cell" style="background:${bg};color:${fg}" title="${r.product} (${hm.months[idx]}): ${v > 0 ? '+' : ''}${v}%">${v > 0 ? '+' : ''}${Math.round(v)}%</div></td>`;
+            });
+            hHtml += '</tr>';
+        });
+        hHtml += '</tbody></table>';
+        hHtml += `<div class="heatmap-legend"><span><span class="heatmap-legend-swatch" style="background:rgba(239,68,68,0.75)"></span>Strong Drop (&le;-25%)</span><span><span class="heatmap-legend-swatch" style="background:rgba(148,163,184,0.2)"></span>Neutral</span><span><span class="heatmap-legend-swatch" style="background:rgba(20,184,166,0.75)"></span>Strong Gain (&ge;+25%)</span></div>`;
+        hmWrap.innerHTML = hHtml;
+    }
 }
 
 function padData(srcMonths, srcData, targetMonths) {
@@ -1346,31 +1440,33 @@ function renderCustomers() {
     updateChartTitles(scope);
     const k = D.kpis;
     const prods = scope.prods;
+    const isUnfiltered = !scope.isFiltered && !scope.hasSecondaryFilter;
     const custScale = (prods.length / D.products.length) * scope.scaleOther;
 
-    // Dynamic customer metrics
-    let dynRet = 85.7;
-    if (prods.length > 0) {
+    let dynRet = k.retention_rate;
+    if (!isUnfiltered && prods.length > 0) {
         const sumRet = prods.reduce((sum, p) => {
             if (p.is_launched) return sum + 92.4;
             const drop = (p.avg_before && p.avg_after < p.avg_before) ? ((p.avg_before - p.avg_after) / p.avg_before) * 100 : 0;
-            return sum + Math.max(62.0, 85.7 - (drop * 0.35));
+            return sum + Math.max(62.0, k.retention_rate - (drop * 0.35));
         }, 0);
         dynRet = sumRet / prods.length;
     }
-    const dynSwitch = Math.min(35.0, Math.max(5.0, (100 - dynRet) * 0.75));
+    const dynSwitch = isUnfiltered ? D.cannibalization.switching_rate : Math.min(35.0, Math.max(5.0, (100 - dynRet) * 0.75));
+    const totalCust = isUnfiltered ? k.total_customers : Math.round(k.total_customers * custScale);
 
     const grid = document.getElementById('cust-kpis');
+    const retainedCust = Math.round(totalCust * (dynRet / 100));
     if (grid) {
         grid.innerHTML = '';
-        grid.appendChild(createKPI('Total Customers', fmtFull(Math.round(k.total_customers * custScale)), null, 'blue', '', 'users', 'Active customer base'));
-        grid.appendChild(createKPI('Retention Rate', dynRet.toFixed(1) + '%', null, 'green', '', 'user-check', prods.length < D.products.length ? 'Filtered scope retention' : 'Portfolio retention'));
+        grid.appendChild(createKPI('Total Customers', fmtFull(totalCust), null, 'blue', '', 'users', 'Active customer base'));
+        grid.appendChild(createKPI('Retained Customers', fmtFull(retainedCust), null, 'teal', '', 'shield-check', 'Active across periods'));
+        grid.appendChild(createKPI('Retention Rate', dynRet.toFixed(1) + '%', null, 'green', '', 'user-check', isUnfiltered ? 'Portfolio retention' : 'Filtered scope retention'));
         grid.appendChild(createKPI('Switching Rate', dynSwitch.toFixed(1) + '%', null, 'red', '', 'repeat', 'Migration to new lines'));
     }
 
-    // Region customers - UNIFIED SCOPE
     const ctx1 = getCtx('chart-cust-region');
-    const regCust = scope.regions.sales.map(s => Math.round(s / 50));
+    const regCust = scope.regions.customers;
     createChart('chart-cust-region', ctx1, {
         type: 'doughnut',
         data: {
@@ -1388,9 +1484,9 @@ function renderCustomers() {
         data: {
             labels: ['Switched to New Products', 'Stayed with P6', 'Churned'],
             datasets: [{
-                data: [Math.round(m.switched * custScale), Math.round(m.stayed * custScale), Math.round(m.lost * custScale)],
+                data: isUnfiltered ? [m.switched, m.stayed, m.lost] : [Math.round(m.switched * custScale), Math.round(m.stayed * custScale), Math.round(m.lost * custScale)],
                 backgroundColor: [COLORS.red, COLORS.green, COLORS.amber],
-                borderColor: document.documentElement.classList.contains('dark-theme') ? '#1e293b' : '#ffffff',
+                borderColor: document.body.classList.contains('dark-theme') ? '#1e293b' : '#ffffff',
                 borderWidth: 2
             }]
         },
@@ -1427,6 +1523,29 @@ function renderPricing() {
     updateChartTitles(scope);
     const prods = [...scope.prods].sort((a, b) => b.avg_price - a.avg_price);
 
+    const pGrid = document.getElementById('pricing-kpis');
+    if (pGrid) {
+        const totS = prods.reduce((s, p) => s + p.total_sales, 0);
+        const totR = prods.reduce((s, p) => s + p.total_revenue, 0);
+        const wAvg = totS > 0 ? (totR / totS) : D.kpis.avg_price;
+        const launched = prods.filter(p => p.is_launched);
+        const legacy = prods.filter(p => !p.is_launched);
+        const lAvg = launched.length ? launched.reduce((s, p) => s + p.avg_price, 0) / launched.length : 0;
+        const eAvg = legacy.length ? legacy.reduce((s, p) => s + p.avg_price, 0) / legacy.length : 0;
+        let topBand = 'N/A', topBandRev = -1;
+        scope.priceBands.labels.forEach((lbl, idx) => {
+            if ((scope.priceBands.revenue[idx] || 0) > topBandRev) {
+                topBandRev = scope.priceBands.revenue[idx] || 0;
+                topBand = lbl;
+            }
+        });
+        pGrid.innerHTML = '';
+        pGrid.appendChild(createKPI('Weighted Avg Price', `₹${wAvg.toFixed(2)}`, null, 'blue', '', 'tag', 'Portfolio weighted average'));
+        pGrid.appendChild(createKPI('Launched Avg Price', lAvg ? `₹${lAvg.toFixed(2)}` : 'N/A', null, 'teal', '', 'rocket', `${launched.length} new lines`));
+        pGrid.appendChild(createKPI('Legacy Avg Price', eAvg ? `₹${eAvg.toFixed(2)}` : 'N/A', null, 'amber', '', 'layers', `${legacy.length} existing lines`));
+        pGrid.appendChild(createKPI('Top Revenue Segment', topBand, null, 'purple', '', 'award', topBandRev >= 0 ? `₹${fmt(topBandRev)} revenue` : ''));
+    }
+
     const ctx1 = getCtx('chart-price-product');
     createChart('chart-price-product', ctx1, {
         type: 'bar',
@@ -1449,6 +1568,43 @@ function renderPricing() {
         },
         options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true } } }
     });
+
+    const ctxBox = getCtx('chart-price-boxplot');
+    if (ctxBox && D.price_boxplot) {
+        const activeCats = new Set(prods.map(p => p.category));
+        const boxData = D.price_boxplot.filter(b => activeCats.has(b.category));
+        const hasBoxplotPlugin = !!(Chart.registry && Chart.registry.controllers && Chart.registry.controllers.get('boxplot'));
+        if (hasBoxplotPlugin) {
+            createChart('chart-price-boxplot', ctxBox, {
+                type: 'boxplot',
+                data: {
+                    labels: boxData.map(b => b.category),
+                    datasets: [{
+                        label: 'Price Distribution (₹)',
+                        data: boxData.map(b => ({ min: b.min, q1: b.q1, median: b.median, q3: b.q3, max: b.max, mean: b.mean })),
+                        backgroundColor: 'rgba(99, 102, 241, 0.35)',
+                        borderColor: COLORS.blue,
+                        borderWidth: 2,
+                        medianColor: COLORS.red,
+                        outlierBackgroundColor: COLORS.amber
+                    }]
+                },
+                options: { responsive: true, scales: { y: { title: { display: true, text: 'Price (₹)' } } } }
+            });
+        } else {
+            createChart('chart-price-boxplot', ctxBox, {
+                type: 'bar',
+                data: {
+                    labels: boxData.map(b => b.category),
+                    datasets: [
+                        { label: 'IQR (Q1 - Q3)', data: boxData.map(b => [b.q1, b.q3]), backgroundColor: 'rgba(99, 102, 241, 0.45)', borderColor: COLORS.blue, borderWidth: 1.5, borderRadius: 4 },
+                        { label: 'Median Price', data: boxData.map(b => b.median), type: 'line', borderColor: COLORS.red, backgroundColor: COLORS.red, pointRadius: 6, showLine: false }
+                    ]
+                },
+                options: { responsive: true, scales: { y: { title: { display: true, text: 'Price (₹)' } } } }
+            });
+        }
+    }
 
     const ctx2 = getCtx('chart-price-band');
     createChart('chart-price-band', ctx2, {
@@ -1478,20 +1634,33 @@ function renderPricing() {
         },
         options: { responsive: true }
     });
+
 }
 
-
-// ═══════════════════════════════════════════════════════════════════════
-// PAGE 7: MARKETING ANALYSIS
-// ═══════════════════════════════════════════════════════════════════════
-
 function renderMarketing() {
-    const prods = window.filteredProducts || D.products;
-    const isFiltered = prods.length < D.products.length;
-    
-    // Filter marketing data based on active products
+    const scope = getFilteredDatasetScope();
+    const prods = scope.prods;
+    const isFiltered = scope.isFiltered;
     const mkt = isFiltered ? prods.map(p => D.marketing.find(m => m.product === p.Product_ID)).filter(Boolean) : D.marketing;
-    
+
+    const mGrid = document.getElementById('mkt-kpis');
+    if (mGrid) {
+        const totSpend = prods.reduce((s, p) => s + (p.mkt_spend || 0), 0) * scope.scaleOther;
+        const totRev = prods.reduce((s, p) => s + (p.total_revenue || 0), 0) * scope.scaleOther;
+        const portRoi = totSpend > 0 ? (totRev / totSpend) : D.kpis.mkt_roi;
+        const launched = prods.filter(p => p.is_launched);
+        const lSpend = launched.reduce((s, p) => s + (p.mkt_spend || 0), 0);
+        const lRev = launched.reduce((s, p) => s + (p.total_revenue || 0), 0);
+        const lRoi = lSpend > 0 ? (lRev / lSpend) : 0;
+        const topMkt = [...mkt].sort((a, b) => b.roi - a.roi)[0];
+
+        mGrid.innerHTML = '';
+        mGrid.appendChild(createKPI('Total Marketing Spend', `₹${fmt(totSpend)}`, null, 'blue', '', 'wallet', 'Campaign investment'));
+        mGrid.appendChild(createKPI('Portfolio ROI', `${portRoi.toFixed(2)}x`, null, 'teal', '', 'target', 'Revenue per ₹1 spend'));
+        mGrid.appendChild(createKPI('Launched Line ROI', lRoi ? `${lRoi.toFixed(2)}x` : 'N/A', null, 'amber', '', 'rocket', `${launched.length} new products`));
+        mGrid.appendChild(createKPI('Top ROI Product', topMkt ? topMkt.product : 'N/A', null, 'purple', '', 'award', topMkt ? `${topMkt.roi.toFixed(2)}x efficiency` : ''));
+    }
+
     const ctx = getCtx('chart-mkt-roi');
     createChart('chart-mkt-roi', ctx, {
         type: 'bar',
@@ -1512,12 +1681,54 @@ function renderMarketing() {
                 }
             ]
         },
-        options: { 
-            responsive: true, 
+        options: {
+            responsive: true,
             scales: { x: { stacked: true }, y: { stacked: true } },
-            plugins: { legend: { display: true } } 
+            plugins: { legend: { display: true } }
         }
     });
+
+    const ctx2 = getCtx('chart-mkt-spend-rev');
+    if (ctx2) {
+        const sortedP = [...prods].sort((a, b) => (b.mkt_spend || 0) - (a.mkt_spend || 0));
+        createChart('chart-mkt-spend-rev', ctx2, {
+            type: 'bar',
+            data: {
+                labels: sortedP.map(p => p.Product_ID),
+                datasets: [
+                    { label: 'Marketing Spend', data: sortedP.map(p => Math.round((p.mkt_spend || 0) * scope.scaleOther)), backgroundColor: COLORS.amber, borderRadius: 3 },
+                    { label: 'Total Revenue', data: sortedP.map(p => Math.round((p.total_revenue || 0) * scope.scaleOther)), backgroundColor: COLORS.teal, borderRadius: 3 }
+                ]
+            },
+            options: { responsive: true, interaction: { mode: 'index', intersect: false } }
+        });
+    }
+
+    const ctx3 = getCtx('chart-mkt-trend');
+    if (ctx3 && D.monthly_trends.spend) {
+        const spendFilt = applyDateFilter(D.monthly_trends.months, D.monthly_trends.spend);
+        const prodRatio = prods.reduce((s, p) => s + (p.mkt_spend || 0), 0) / (D.products.reduce((s, p) => s + (p.mkt_spend || 0), 0) || 1);
+        const scaledSpend = spendFilt.data.map(v => Math.round(v * prodRatio * scope.scaleOther));
+        const monthlyRoi = scope.timeline.revenue.map((rev, i) => scaledSpend[i] > 0 ? Number((rev / scaledSpend[i]).toFixed(2)) : 0);
+        createChart('chart-mkt-trend', ctx3, {
+            type: 'line',
+            data: {
+                labels: scope.timeline.months,
+                datasets: [
+                    { label: 'Marketing Spend', data: scaledSpend, borderColor: COLORS.amber, backgroundColor: 'rgba(245,158,11,0.12)', fill: true, tension: 0.35, yAxisID: 'y' },
+                    { label: 'Monthly ROI (x)', data: monthlyRoi, borderColor: COLORS.purple, tension: 0.35, borderWidth: 2.5, yAxisID: 'y1' }
+                ]
+            },
+            options: {
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    y: { position: 'left', title: { display: true, text: 'Spend (₹)' } },
+                    y1: { position: 'right', title: { display: true, text: 'ROI (x)' }, grid: { drawOnChartArea: false } }
+                }
+            }
+        });
+    }
 }
 
 
@@ -1529,6 +1740,21 @@ function renderInventory() {
     const inv = D.inventory;
     const prods = window.filteredProducts || D.products;
     const isFiltered = prods.length < D.products.length;
+
+    const iGrid = document.getElementById('inv-kpis');
+    if (iGrid) {
+        const avgAvail = prods.length ? (prods.reduce((s, p) => s + (p.stock_avail ?? D.kpis.stock_avail), 0) / prods.length) : D.kpis.stock_avail;
+        const totOos = prods.reduce((s, p) => s + (p.oos_count || 0), 0);
+        const worstProd = [...prods].sort((a, b) => (b.oos_count || 0) - (a.oos_count || 0))[0];
+        const postLaunchMonths = inv.months.map((m, i) => m >= '2024-06' ? inv.stock_pct[i] : null).filter(v => v !== null);
+        const postAvail = postLaunchMonths.length ? (postLaunchMonths.reduce((a, b) => a + b, 0) / postLaunchMonths.length) : avgAvail;
+
+        iGrid.innerHTML = '';
+        iGrid.appendChild(createKPI('Stock Availability', `${avgAvail.toFixed(1)}%`, null, 'green', '', 'boxes', isFiltered ? 'Filtered scope rate' : 'Portfolio in-stock rate'));
+        iGrid.appendChild(createKPI('Out-of-Stock Events', fmtFull(totOos), null, 'red', '', 'alert-triangle', 'Total stockout records'));
+        iGrid.appendChild(createKPI('Highest OOS Product', worstProd ? worstProd.Product_ID : 'N/A', null, 'amber', '', 'package', worstProd ? `${fmtFull(worstProd.oos_count || 0)} OOS records` : ''));
+        iGrid.appendChild(createKPI('Post-Launch Avail.', `${postAvail.toFixed(1)}%`, null, 'blue', '', 'activity', 'Jun–Dec 2024 average'));
+    }
 
     const ctx1 = getCtx('chart-inv-trend');
     const trendFilt = applyDateFilter(inv.months, inv.stock_pct);
@@ -1567,6 +1793,29 @@ function renderInventory() {
         },
         options: { responsive: true, plugins: { legend: { display: false } } }
     });
+
+    const ctx3 = getCtx('chart-inv-cat-oos');
+    if (ctx3 && inv.oos_by_category) {
+        const activeCats = new Set(prods.map(p => p.category));
+        const catOos = inv.oos_by_category.filter(c => activeCats.has(c.category));
+        createChart('chart-inv-cat-oos', ctx3, {
+            type: 'bar',
+            data: {
+                labels: catOos.map(c => c.category),
+                datasets: [{
+                    label: 'Out-of-Stock Rate %',
+                    data: catOos.map(c => c.oos_rate_pct),
+                    backgroundColor: [COLORS.red, COLORS.amber, COLORS.blue, COLORS.teal, COLORS.purple],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { min: 0, title: { display: true, text: 'OOS Rate (%)' } } }
+            }
+        });
+    }
 }
 
 
@@ -1581,8 +1830,9 @@ function renderRegional() {
     const grid = document.getElementById('region-kpis');
     if (grid) {
         grid.innerHTML = '';
+        const regColors = ['blue', 'teal', 'amber', 'green', 'purple'];
         scope.regions.labels.forEach((r, i) => {
-            grid.appendChild(createKPI(r, '₹' + fmt(scope.regions.revenue[i]), null, ['blue', 'teal', 'amber', 'green'][i]));
+            grid.appendChild(createKPI(r, '₹' + fmt(scope.regions.revenue[i]), null, regColors[i % regColors.length]));
         });
     }
 
@@ -1597,19 +1847,54 @@ function renderRegional() {
     });
 
     const ctx2 = getCtx('chart-reg-ba');
-    const regBefore = scope.regions.sales.map((s, i) => Math.round(s * 0.48 / 24));
-    const regAfter = scope.regions.sales.map((s, i) => Math.round(s * 0.52 / 24));
     createChart('chart-reg-ba', ctx2, {
         type: 'bar',
         data: {
             labels: scope.regions.labels,
             datasets: [
-                { label: 'Before Launch', data: regBefore, backgroundColor: COLORS.blue },
-                { label: 'After Launch',  data: regAfter,  backgroundColor: COLORS.teal }
+                { label: 'Before Launch', data: scope.regions.salesBefore, backgroundColor: COLORS.blue },
+                { label: 'After Launch',  data: scope.regions.salesAfter,  backgroundColor: COLORS.teal }
             ]
         },
         options: { responsive: true }
     });
+
+    const regHm = document.getElementById('reg-heatmap-wrapper');
+    if (regHm && D.category_region_matrix) {
+        const mat = D.category_region_matrix;
+        const activeCats = new Set(scope.prods.map(p => p.category));
+        const activeRegs = scope.activeRegions ? new Set(scope.activeRegions) : new Set(mat.regions);
+        const regIndices = mat.regions.map((r, i) => activeRegs.has(r) ? i : -1).filter(i => i !== -1);
+        const isDark = document.body.classList.contains('dark-theme');
+
+        let maxVal = 1;
+        mat.categories.forEach((c, ci) => {
+            if (!activeCats.has(c)) return;
+            regIndices.forEach(ri => {
+                const v = (mat.revenue[ci][ri] || 0) * scope.segScale;
+                if (v > maxVal) maxVal = v;
+            });
+        });
+
+        let rHtml = '<table class="heatmap-table"><thead><tr><th class="row-head">Category</th>';
+        regIndices.forEach(ri => { rHtml += `<th>${mat.regions[ri]}</th>`; });
+        rHtml += '</tr></thead><tbody>';
+
+        mat.categories.forEach((c, ci) => {
+            if (!activeCats.has(c)) return;
+            rHtml += `<tr><th class="row-head">${c}</th>`;
+            regIndices.forEach(ri => {
+                const rev = Math.round((mat.revenue[ci][ri] || 0) * scope.segScale);
+                const intensity = Math.max(0.12, Math.min(0.88, rev / maxVal));
+                const bg = `rgba(99, 102, 241, ${intensity.toFixed(2)})`;
+                const fg = intensity > 0.45 ? '#ffffff' : (isDark ? '#e2e8f0' : '#1e293b');
+                rHtml += `<td><div class="heatmap-cell" style="background:${bg};color:${fg}" title="${c} / ${mat.regions[ri]}: ₹${fmtFull(rev)}">₹${fmt(rev)}</div></td>`;
+            });
+            rHtml += '</tr>';
+        });
+        rHtml += '</tbody></table>';
+        regHm.innerHTML = rHtml;
+    }
 }
 
 
@@ -1617,27 +1902,97 @@ function renderRegional() {
 // PAGE 10: RECOMMENDATIONS
 // ═══════════════════════════════════════════════════════════════════════
 
-function renderRecommendations() {
+function renderRecommendations(priorityFilter = 'All') {
     const grid = document.getElementById('rec-grid');
+    if (!grid) return;
+
+    const recs = D.recommendations || [];
+    const highCount = recs.filter(r => r.priority === 'High').length;
+    const medCount = recs.filter(r => r.priority === 'Medium').length;
+    const lowCount = recs.filter(r => r.priority === 'Low').length;
+    const highImpactCount = recs.filter(r => r.impact === 'High').length;
+
+    const statsStrip = document.getElementById('recStatsStrip');
+    if (statsStrip) {
+        statsStrip.innerHTML = `
+            <div class="rec-stat-item"><span class="rec-stat-val">${recs.length}</span><span class="rec-stat-lbl">Total Initiatives</span></div>
+            <div class="rec-stat-item"><span class="rec-stat-val red">${highCount}</span><span class="rec-stat-lbl">High Priority Actions</span></div>
+            <div class="rec-stat-item"><span class="rec-stat-val teal">${highImpactCount}</span><span class="rec-stat-lbl">High Impact Levers</span></div>
+            <div class="rec-stat-item"><span class="rec-stat-val">${D.kpis?.cann_rate ?? 18.3}%</span><span class="rec-stat-lbl">Target Cannibalization</span></div>
+        `;
+    }
+
+    const pillsWrap = document.getElementById('recFilterPills');
+    if (pillsWrap && !pillsWrap.dataset.bound) {
+        pillsWrap.dataset.bound = '1';
+        pillsWrap.querySelectorAll('.rec-pill').forEach(btn => {
+            btn.addEventListener('click', () => {
+                pillsWrap.querySelectorAll('.rec-pill').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderRecommendations(btn.dataset.priority || 'All');
+            });
+        });
+    }
+
+    const iconMap = {
+        'Product Strategy': 'package',
+        'Pricing Strategy': 'tag',
+        'Marketing Focus': 'megaphone',
+        'Inventory Planning': 'archive',
+        'Customer Retention': 'users',
+        'Launch Strategy': 'rocket',
+        'Growth Assessment': 'trending-up',
+        'Regional Strategy': 'map-pin'
+    };
+
+    const horizonMap = {
+        'High': 'Immediate',
+        'Medium': 'Near-Term',
+        'Low': 'Ongoing'
+    };
+
+    const filtered = priorityFilter === 'All' ? recs : recs.filter(r => r.priority === priorityFilter);
     grid.innerHTML = '';
 
-    D.recommendations.forEach(rec => {
+    filtered.forEach((rec, idx) => {
+        const pLower = (rec.priority || 'medium').toLowerCase();
+        const iLower = (rec.impact || 'medium').toLowerCase();
+        const iconName = iconMap[rec.area] || 'sparkles';
+        const horizon = horizonMap[rec.priority] || 'Near-Term';
+
         const card = document.createElement('div');
-        card.className = 'rec-card';
+        card.className = `rec-card priority-${pLower}`;
         card.innerHTML = `
-            <div class="rec-header">
-                <div class="rec-area">${rec.area}</div>
-                <span class="rec-priority ${rec.priority.toLowerCase()}">${rec.priority} Priority</span>
+            <div class="rec-card-top">
+                <div class="rec-header">
+                    <div class="rec-area-wrap">
+                        <div class="rec-area-icon ${pLower}"><i data-lucide="${iconName}"></i></div>
+                        <div>
+                            <div class="rec-index">ACTION 0${idx + 1}</div>
+                            <div class="rec-area">${rec.area}</div>
+                        </div>
+                    </div>
+                    <span class="rec-priority ${pLower}">${rec.priority} Priority</span>
+                </div>
+                <div class="rec-text">${rec.text}</div>
             </div>
-            <div class="rec-text">${rec.text}</div>
-            <div class="rec-meta">Impact: ${rec.impact}</div>
+            <div class="rec-footer">
+                <span class="rec-impact-badge ${iLower}">
+                    <span class="impact-dot"></span> Impact: ${rec.impact}
+                </span>
+                <span class="rec-horizon-tag">${horizon}</span>
+            </div>
         `;
         grid.appendChild(card);
     });
+
+    if (window.lucide && window.lucide.createIcons) {
+        window.lucide.createIcons();
+    }
 }
 
 
-// ═══════════════════════════════════════════════════════════════════════
+// ???????????????????????????????????????????????????????????????????????
 // SLICER / FILTERS LOGIC
 // ═══════════════════════════════════════════════════════════════════════
 
@@ -1684,7 +2039,7 @@ function getSlicerOptions(id) {
     }
     if (id === 'filter-status') return ['Pre-Launch', 'Post-Launch'];
     if (id === 'filter-segment') return ['High Value', 'Mid Value', 'Budget'];
-    if (id === 'filter-price') return ['Low', 'Medium', 'High'];
+    if (id === 'filter-price') return ['Budget (0-50)', 'Mid (51-100)', 'Premium (101-200)', 'Luxury (201+)'];
     if (id === 'filter-region') return (D.regions || []).map(r => r.Region);
     return [];
 }
@@ -1951,24 +2306,23 @@ function isDefaultFilterState() {
 
 function syncFiltersToURL() {
     const params = new URLSearchParams();
-    const cat = document.getElementById('filter-category')?.value;
-    const status = (document.getElementById('filter-status') || document.getElementById('filter-type'))?.value;
-    const group = document.getElementById('filter-group')?.value;
-    const prod = document.getElementById('filter-product')?.value;
-    const date = document.getElementById('filter-date')?.value;
-    const region = document.getElementById('filter-region')?.value;
-    const segment = document.getElementById('filter-segment')?.value;
-    const price = document.getElementById('filter-price')?.value;
+    const map = [
+        ['date', 'filter-date'],
+        ['category', 'filter-category'],
+        ['group', 'filter-group'],
+        ['product', 'filter-product'],
+        ['region', 'filter-region'],
+        ['status', 'filter-status'],
+        ['segment', 'filter-segment'],
+        ['price', 'filter-price']
+    ];
+    map.forEach(([paramKey, id]) => {
+        const s = window.multiSelectState?.[id];
+        if (s && !s.has('All') && s.size > 0) {
+            params.set(paramKey, Array.from(s).join(','));
+        }
+    });
     const search = document.getElementById('filter-search')?.value.trim();
-
-    if (date && date !== 'All') params.set('date', date);
-    if (cat && cat !== 'All') params.set('category', cat);
-    if (group && group !== 'All') params.set('group', group);
-    if (prod && prod !== 'All') params.set('product', prod);
-    if (region && region !== 'All') params.set('region', region);
-    if (status && status !== 'All') params.set('status', status);
-    if (segment && segment !== 'All') params.set('segment', segment);
-    if (price && price !== 'All') params.set('price', price);
     if (search) params.set('search', search);
 
     const newURL = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
@@ -1979,17 +2333,34 @@ function restoreFiltersFromURL() {
     const params = new URLSearchParams(window.location.search);
     if (!params.toString()) return;
 
-    if (params.has('date')) { const el = document.getElementById('filter-date'); if (el) el.value = params.get('date'); }
-    if (params.has('category')) { const el = document.getElementById('filter-category'); if (el) el.value = params.get('category'); }
-    if (params.has('group')) { const el = document.getElementById('filter-group'); if (el) el.value = params.get('group'); }
-    if (params.has('status') || params.has('type')) { const el = document.getElementById('filter-status') || document.getElementById('filter-type'); if (el) el.value = params.get('status') || params.get('type'); }
-    if (params.has('product')) { const el = document.getElementById('filter-product'); if (el) el.value = params.get('product'); }
-    if (params.has('region')) { const el = document.getElementById('filter-region'); if (el) el.value = params.get('region'); }
-    if (params.has('segment')) { const el = document.getElementById('filter-segment'); if (el) el.value = params.get('segment'); }
-    if (params.has('price')) { const el = document.getElementById('filter-price'); if (el) el.value = params.get('price'); }
-    if (params.has('search')) { const el = document.getElementById('filter-search'); if (el) el.value = params.get('search'); }
+    const map = [
+        ['date', 'filter-date'],
+        ['category', 'filter-category'],
+        ['group', 'filter-group'],
+        ['product', 'filter-product'],
+        ['region', 'filter-region'],
+        ['status', 'filter-status'],
+        ['segment', 'filter-segment'],
+        ['price', 'filter-price']
+    ];
+    map.forEach(([paramKey, id]) => {
+        const rawVal = params.get(paramKey) || (paramKey === 'status' ? params.get('type') : null);
+        if (rawVal) {
+            const vals = rawVal.split(',').map(v => v.trim()).filter(Boolean);
+            if (vals.length) {
+                window.multiSelectState[id] = new Set(vals);
+                renderSlicerPopover(id);
+            }
+        }
+    });
 
-    updateProductOptions();
+    if (params.has('search')) {
+        const el = document.getElementById('filter-search');
+        if (el) el.value = params.get('search');
+    }
+
+    renderSlicerPopover('filter-product');
+    applyFilters();
 }
 
 function showToast(msg) {
@@ -2071,6 +2442,12 @@ function applyFilters(preset = null) {
             if (!sm) match = false;
         }
         if (!prodSet.has('All') && prodSet.size > 0 && !prodSet.has(p.Product_ID)) match = false;
+        if (!priceSet.has('All') && priceSet.size > 0) {
+            const band = p.price_band || (p.avg_price <= 50 ? 'Budget (0-50)' : p.avg_price <= 100 ? 'Mid (51-100)' : p.avg_price <= 200 ? 'Premium (101-200)' : 'Luxury (201+)');
+            const aliasMap = { 'Low': 'Budget (0-50)', 'Medium': 'Mid (51-100)', 'High': 'Luxury (201+)' };
+            const normalizedPriceSet = new Set(Array.from(priceSet).map(v => aliasMap[v] || v));
+            if (!normalizedPriceSet.has(band) && !priceSet.has(band)) match = false;
+        }
         if (searchQuery && !p.Product_ID.toLowerCase().includes(searchQuery) && !p.category.toLowerCase().includes(searchQuery) && !p.group.toLowerCase().includes(searchQuery)) {
             match = false;
         }
@@ -2119,6 +2496,7 @@ function initTheme() {
 
         Chart.defaults.color = isLight ? '#475569' : '#cbd5e1';
         Chart.defaults.borderColor = isLight ? '#f1f5f9' : 'rgba(255, 255, 255, 0.05)';
+        renderedPages.clear();
         renderPage(window.currentPage || 'executive');
     });
 }
@@ -2221,7 +2599,7 @@ ${datasetContext}`;
 
             const data = await response.json();
             if (data.choices && data.choices[0] && data.choices[0].message) {
-                currentModelIndex = modelIdx;
+                currentModelIndex = OPENROUTER_MODELS_POOL.indexOf(targetModel);
                 const aiResponseText = data.choices[0].message.content;
                 const modelBadgeText = attempts > 0 
                     ? `🔄 Auto-Switched to ${targetModel.name} (${targetModel.provider})` 
@@ -2459,102 +2837,21 @@ function dispatchWorkerAnalytics() {
 }
 
 
-function bootApp() {
-    try {
-        if (typeof initTheme === 'function') initTheme();
-        if (typeof initSlicers === 'function') initSlicers();
-        if (typeof restoreFiltersFromURL === 'function') restoreFiltersFromURL();
-        if (typeof initPBIBackgroundEngine === 'function') initPBIBackgroundEngine();
-        if (typeof initAIEngine === 'function') initAIEngine();
-        if (typeof initDocModalListeners === 'function') initDocModalListeners();
-        
-        renderPage(window.currentPage || 'executive');
-        
-        if (window.lucide && window.lucide.createIcons) {
-            window.lucide.createIcons();
-        }
-    } catch (err) {
-        console.error('BootApp Initialization Error:', err);
+const DOC_BASE_URL = "https://docs.google.com/gview?url=https://raw.githubusercontent.com/Harry-0402/P105-Product-Cannibalization-/main/";
+const DOC_RAW_URL = "https://raw.githubusercontent.com/Harry-0402/P105-Product-Cannibalization-/main/";
+const DOC_END_URL = "&embedded=true";
+
+function loadDocPreview(docName) {
+    if (!docName) return;
+    const docIframe = document.getElementById('docIframe');
+    const docDownloadBtn = document.getElementById('docDownloadBtn');
+    const cacheBuster = "%3Fv%3D" + new Date().getTime();
+    if (docIframe) {
+        docIframe.src = DOC_BASE_URL + docName + cacheBuster + DOC_END_URL;
     }
-}
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bootApp);
-} else {
-    bootApp();
-}
-
-window.addEventListener('load', () => {
-    setTimeout(() => {
-        if (window.lucide && window.lucide.createIcons) {
-            window.lucide.createIcons();
-        }
-    }, 50);
-});
-
-
-const docModal = document.getElementById('docModal');
-const docModalClose = document.getElementById('docModalClose');
-const docIframe = document.getElementById('docIframe');
-const docBtns = document.querySelectorAll('.doc-btn');
-const baseUrl = "https://docs.google.com/gview?url=https://raw.githubusercontent.com/Harry-0402/P105-Product-Cannibalization-/main/";
-const endUrl = "&embedded=true";
-
-// Intercept clicks on "Documents" header buttons
-document.querySelectorAll('.header-btn').forEach(btn => {
-    if (btn.innerText.includes('Documents')) {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            docModal.classList.add('active');
-            if (!docIframe.src || !docIframe.src.includes('docs.google.com')) {
-                const cacheBuster = "%3Fv%3D" + new Date().getTime();
-                docIframe.src = baseUrl + "BRD_Product_Cannibalization_Analysis.docx" + cacheBuster + endUrl;
-            }
-        });
+    if (docDownloadBtn) {
+        docDownloadBtn.href = DOC_RAW_URL + docName;
     }
-});
-
-docModalClose.addEventListener('click', () => {
-    docModal.classList.remove('active');
-});
-
-// Close when clicking outside modal content
-window.addEventListener('click', (e) => {
-    if (e.target === docModal) {
-        docModal.classList.remove('active');
-    }
-});
-
-// Document switcher
-const docDownloadBtn = document.getElementById('docDownloadBtn');
-const rawBaseUrl = "https://raw.githubusercontent.com/Harry-0402/P105-Product-Cannibalization-/main/";
-
-docBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-        docBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const docName = btn.getAttribute('data-doc');
-        const cacheBuster = "%3Fv%3D" + new Date().getTime();
-        docIframe.src = baseUrl + docName + cacheBuster + endUrl;
-        if (docDownloadBtn) {
-            docDownloadBtn.href = rawBaseUrl + docName;
-        }
-    });
-});
-
-// Refresh iframe manually
-const docRefreshBtn = document.getElementById('docRefreshBtn');
-if (docRefreshBtn) {
-    docRefreshBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        docIframe.src = '';
-        setTimeout(() => { 
-            const activeBtn = document.querySelector('.doc-btn.active') || document.querySelector('.doc-btn');
-            const docName = activeBtn.getAttribute('data-doc');
-            const cacheBuster = "%3Fv%3D" + new Date().getTime();
-            docIframe.src = baseUrl + docName + cacheBuster + endUrl;
-        }, 100);
-    });
 }
 
 function openDocModal(e) {
@@ -2562,46 +2859,16 @@ function openDocModal(e) {
     const modal = document.getElementById('docModal');
     if (modal) {
         modal.classList.add('active');
-        const activeBtn = modal.querySelector('.doc-btn.active');
-        if (activeBtn) loadDocPreview(activeBtn.dataset.doc);
+        const activeBtn = modal.querySelector('.doc-btn.active') || modal.querySelector('.doc-btn');
+        if (activeBtn) loadDocPreview(activeBtn.getAttribute('data-doc'));
     }
 }
-
-
-function safeBootApp() {
-    try {
-        initTheme();
-        initSlicers();
-        restoreFiltersFromURL();
-        initPBIBackgroundEngine();
-        initAIEngine();
-        initDocModalListeners();
-        renderPage(window.currentPage || 'executive');
-        if (window.lucide && window.lucide.createIcons) {
-            window.lucide.createIcons();
-        }
-    } catch (err) {
-        console.error('Seamless Boot Error:', err);
-    }
-}
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', safeBootApp);
-} else {
-    safeBootApp();
-}
-window.addEventListener('load', () => {
-    if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
-});
-
 
 function initDocModalListeners() {
     const docModal = document.getElementById('docModal');
     const docModalClose = document.getElementById('docModalClose');
     const docIframe = document.getElementById('docIframe');
     const docBtns = document.querySelectorAll('.doc-btn');
-    const baseUrl = "https://docs.google.com/gview?url=https://raw.githubusercontent.com/Harry-0402/P105-Product-Cannibalization-/main/";
-    const endUrl = "&embedded=true";
 
     if (docModalClose) {
         docModalClose.addEventListener('click', () => {
@@ -2620,11 +2887,7 @@ function initDocModalListeners() {
             btn.addEventListener('click', () => {
                 docBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                const docName = btn.getAttribute('data-doc');
-                const cacheBuster = "%3Fv%3D" + new Date().getTime();
-                if (docIframe) docIframe.src = baseUrl + docName + cacheBuster + endUrl;
-                const docDownloadBtn = document.getElementById('docDownloadBtn');
-                if (docDownloadBtn) docDownloadBtn.href = "https://raw.githubusercontent.com/Harry-0402/P105-Product-Cannibalization-/main/" + docName;
+                loadDocPreview(btn.getAttribute('data-doc'));
             });
         });
     }
@@ -2634,14 +2897,98 @@ function initDocModalListeners() {
         docRefreshBtn.addEventListener('click', (e) => {
             e.preventDefault();
             if (docIframe) docIframe.src = '';
-            setTimeout(() => { 
+            setTimeout(() => {
                 const activeBtn = document.querySelector('.doc-btn.active') || document.querySelector('.doc-btn');
-                if (activeBtn && docIframe) {
-                    const docName = activeBtn.getAttribute('data-doc');
-                    const cacheBuster = "%3Fv%3D" + new Date().getTime();
-                    docIframe.src = baseUrl + docName + cacheBuster + endUrl;
-                }
+                if (activeBtn) loadDocPreview(activeBtn.getAttribute('data-doc'));
             }, 100);
         });
     }
 }
+
+
+window.__activeDockBtnId = 'themeToggle';
+
+function setDockFocus(targetId) {
+    const dock = document.getElementById('sidebarActionDock');
+    if (!dock) return;
+    dock.querySelectorAll('.dock-btn').forEach(btn => {
+        btn.classList.toggle('is-expanded', btn.id === targetId);
+    });
+}
+
+function initSidebarActionDock() {
+    const dock = document.getElementById('sidebarActionDock');
+    if (!dock) return;
+    const dockOrder = ['themeToggle', 'sidebarRepoBtn', 'sidebarCreatorBtn'];
+    let dockIdx = 0;
+    let dockPaused = false;
+
+    const btns = dock.querySelectorAll('.dock-btn');
+    btns.forEach(btn => {
+        btn.addEventListener('mouseenter', () => {
+            dockPaused = true;
+            setDockFocus(btn.id);
+        });
+        btn.addEventListener('focus', () => {
+            dockPaused = true;
+            setDockFocus(btn.id);
+        });
+        btn.addEventListener('click', () => {
+            window.__activeDockBtnId = btn.id;
+            const foundIdx = dockOrder.indexOf(btn.id);
+            if (foundIdx !== -1) dockIdx = foundIdx;
+            setDockFocus(btn.id);
+        });
+    });
+
+    dock.addEventListener('mouseleave', () => {
+        dockPaused = false;
+        setDockFocus(window.__activeDockBtnId || dockOrder[dockIdx]);
+    });
+    dock.addEventListener('focusout', () => {
+        dockPaused = false;
+    });
+
+    if (!window.__dockAutoTimer) {
+        window.__dockAutoTimer = setInterval(() => {
+            if (dockPaused) return;
+            dockIdx = (dockIdx + 1) % dockOrder.length;
+            window.__activeDockBtnId = dockOrder[dockIdx];
+            setDockFocus(dockOrder[dockIdx]);
+        }, 3200);
+    }
+}
+
+function bootApp() {
+    if (window.__p105Booted) return;
+    window.__p105Booted = true;
+    try {
+        window.currentPage = window.currentPage || 'executive';
+        initTheme();
+        initSidebarActionDock();
+        initSlicers();
+        restoreFiltersFromURL();
+        initPBIBackgroundEngine();
+        initAIEngine();
+        initDocModalListeners();
+        updateFilterHubPageHeader(window.currentPage);
+        renderPage(window.currentPage);
+        if (window.lucide && window.lucide.createIcons) {
+            window.lucide.createIcons();
+        }
+    } catch (err) {
+        console.error('BootApp Initialization Error:', err);
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootApp);
+} else {
+    bootApp();
+}
+
+window.addEventListener('load', () => {
+    if (window.lucide && window.lucide.createIcons) {
+        window.lucide.createIcons();
+    }
+});

@@ -7,25 +7,17 @@ self.onmessage = function(e) {
 
     if (action === 'PROCESS_ANALYTICS') {
         const { prods, filters, D } = payload;
-        
+
         const startTime = performance.now();
 
-        // 1. Calculate Monthly Trend Vector in Background Thread
         const trendData = computeMonthlyTrend(prods, filters, D);
-
-        // 2. Calculate Regional Share Matrix in Background Thread
-        const regData = computeRegionShare(prods, filters);
-
-        // 3. Calculate Price Band Distributions in Background Thread
+        const regData = computeRegionShare(prods, filters, D);
         const pBandData = computePriceBands(prods, filters);
-
-        // 4. Perform Background Anomaly & Statistical Variance Detection
         const anomalies = detectAnomalies(prods);
 
         const endTime = performance.now();
         const duration = Number((endTime - startTime).toFixed(2));
 
-        // Post computed data back to main UI thread
         self.postMessage({
             status: 'COMPLETED',
             durationMs: duration,
@@ -38,127 +30,77 @@ self.onmessage = function(e) {
     }
 };
 
+function getSegmentScale(segments) {
+    if (!segments || !segments.length || segments.includes('All')) return 1;
+    const weights = { 'High Value': 0.4, 'Mid Value': 0.35, 'Budget': 0.25 };
+    return segments.reduce((sum, s) => sum + (weights[s] || 0), 0) || 1;
+}
+
 function computeMonthlyTrend(prods, filters, D) {
     const months = D.monthly_trends.months;
-    const globalSales = D.monthly_trends.sales;
-    
-    const sumBeforeGlobal = globalSales.slice(0, 17).reduce((a, b) => a + b, 0) || 1;
-    const sumAfterGlobal = globalSales.slice(17, 24).reduce((a, b) => a + b, 0) || 1;
-
-    const weightsBefore = globalSales.slice(0, 17).map(v => v / sumBeforeGlobal);
-    const weightsAfter = globalSales.slice(17, 24).map(v => v / sumAfterGlobal);
-
-    const monthlySales = new Array(24).fill(0);
-    const monthlyRevenue = new Array(24).fill(0);
-
-    const timelineP6 = D.cannibalization?.timeline?.P6?.sales || [];
-    const timelineP4 = D.cannibalization?.timeline?.P4?.sales || [];
-    const timelineP5 = D.cannibalization?.timeline?.P5?.sales || [];
+    const monthlySales = new Array(months.length).fill(0);
+    const monthlyRevenue = new Array(months.length).fill(0);
 
     prods.forEach(p => {
-        const pid = p.Product_ID;
-        const price = p.avg_price || 100;
-
-        for (let i = 0; i < 24; i++) {
-            let mSales = 0;
-            if (pid === 'P6' && timelineP6.length === 24) {
-                mSales = timelineP6[i];
-            } else if (pid === 'P4' && i >= 17 && timelineP4.length === 7) {
-                mSales = timelineP4[i - 17];
-            } else if (pid === 'P5' && i >= 17 && timelineP5.length === 7) {
-                mSales = timelineP5[i - 17];
-            } else if (i < 17) {
-                if (p.is_launched) {
-                    mSales = 0;
-                } else {
-                    const totalBeforeSales = (p.sales_before || p.avg_before || 25) * 17;
-                    mSales = totalBeforeSales * weightsBefore[i];
-                }
-            } else {
-                const totalAfterSales = (p.sales_after || p.avg_after || 25) * 7;
-                mSales = totalAfterSales * weightsAfter[i - 17];
+        const pm = D.monthly_by_product && D.monthly_by_product[p.Product_ID];
+        if (pm && pm.sales && pm.revenue) {
+            for (let i = 0; i < months.length; i++) {
+                monthlySales[i] += pm.sales[i] || 0;
+                monthlyRevenue[i] += pm.revenue[i] || 0;
             }
-
-            monthlySales[i] += mSales;
-            monthlyRevenue[i] += mSales * price;
         }
     });
 
-    let scaleOther = 1;
-    if (filters.region && filters.region !== 'All') {
-        const rData = D.regions.find(r => r.Region === filters.region);
-        if (rData) scaleOther *= (rData.total_sales / D.kpis.total_sales);
-    }
-    if (filters.segment && filters.segment !== 'All') {
-        scaleOther *= (filters.segment === 'High Value' ? 0.4 : (filters.segment === 'Mid Value' ? 0.35 : 0.25));
-    }
-    if (filters.price && filters.price !== 'All') {
-        scaleOther *= (filters.price === 'Low' ? 0.2 : (filters.price === 'Medium' ? 0.5 : 0.3));
-    }
+    let scaleOther = getSegmentScale(filters.segments || (filters.region ? [filters.segment] : ['All']));
+    const selectedRegions = filters.regions && filters.regions.length && !filters.regions.includes('All')
+        ? filters.regions
+        : (filters.region && filters.region !== 'All' ? [filters.region] : null);
 
-    const scaledSales = monthlySales.map(s => Math.round(s * scaleOther));
-    const scaledRevenue = monthlyRevenue.map(r => Math.round(r * scaleOther));
+    if (selectedRegions && D.region_by_product) {
+        let fullSales = 0;
+        let regSales = 0;
+        prods.forEach(p => {
+            fullSales += p.total_sales || 0;
+            const rp = D.region_by_product[p.Product_ID];
+            if (rp) {
+                selectedRegions.forEach(r => {
+                    regSales += (rp[r]?.sales || 0);
+                });
+            }
+        });
+        if (fullSales > 0) scaleOther *= (regSales / fullSales);
+    }
 
     return {
         months,
-        sales: scaledSales,
-        revenue: scaledRevenue
+        sales: monthlySales.map(s => Math.round(s * scaleOther)),
+        revenue: monthlyRevenue.map(r => Math.round(r * scaleOther))
     };
 }
 
-function computeRegionShare(prods, filters) {
-    let scaleOther = 1;
-    const prodRegionMap = {
-        'P1':  { East: 0.55, North: 0.25, South: 0.12, West: 0.08 },
-        'P2':  { West: 0.48, South: 0.30, North: 0.14, East: 0.08 },
-        'P3':  { South: 0.50, North: 0.28, West: 0.14, East: 0.08 },
-        'P4':  { West: 0.52, South: 0.28, North: 0.12, East: 0.08 },
-        'P5':  { West: 0.46, South: 0.32, North: 0.14, East: 0.08 },
-        'P6':  { North: 0.48, East: 0.32, South: 0.12, West: 0.08 },
-        'P7':  { South: 0.42, North: 0.32, West: 0.16, East: 0.10 },
-        'P8':  { South: 0.44, North: 0.30, West: 0.16, East: 0.10 },
-        'P9':  { South: 0.45, North: 0.29, West: 0.16, East: 0.10 },
-        'P10': { West: 0.40, South: 0.32, North: 0.16, East: 0.12 },
-        'P11': { East: 0.60, North: 0.20, West: 0.12, South: 0.08 },
-        'P12': { South: 0.38, North: 0.32, West: 0.18, East: 0.12 },
-        'P13': { West: 0.42, South: 0.30, North: 0.16, East: 0.12 },
-        'P14': { North: 0.40, East: 0.30, South: 0.18, West: 0.12 },
-        'P15': { East: 0.50, West: 0.24, North: 0.16, South: 0.10 },
-        'P16': { North: 0.42, East: 0.28, South: 0.18, West: 0.12 },
-        'P17': { East: 0.48, West: 0.26, North: 0.16, South: 0.10 },
-        'P18': { West: 0.44, South: 0.28, North: 0.16, East: 0.12 },
-        'P19': { West: 0.38, North: 0.32, East: 0.18, South: 0.12 },
-        'P20': { East: 0.52, West: 0.24, North: 0.14, South: 0.10 },
-        'P21': { North: 0.44, East: 0.26, South: 0.18, West: 0.12 },
-        'P22': { West: 0.45, South: 0.29, North: 0.16, East: 0.10 },
-        'P23': { East: 0.56, West: 0.22, North: 0.14, South: 0.08 },
-        'P24': { West: 0.36, North: 0.32, East: 0.18, South: 0.14 },
-        'P25': { West: 0.35, North: 0.31, East: 0.20, South: 0.14 },
-    };
-
-    const catSharesDefault = {
-        'Household':     { East: 0.52, West: 0.24, North: 0.14, South: 0.10 },
-        'Personal Care': { South: 0.42, North: 0.31, West: 0.16, East: 0.11 },
-        'Beverages':     { North: 0.44, East: 0.28, South: 0.16, West: 0.12 },
-        'Dairy':         { West: 0.46, South: 0.30, North: 0.14, East: 0.10 },
-        'Snacks':        { West: 0.36, North: 0.31, East: 0.19, South: 0.14 },
-    };
-
+function computeRegionShare(prods, filters, D) {
     const regions = ['East', 'North', 'South', 'West'];
     const regionSalesMap = { East: 0, North: 0, South: 0, West: 0 };
     const regionRevMap = { East: 0, North: 0, South: 0, West: 0 };
+    const scaleOther = getSegmentScale(filters.segments || (filters.segment ? [filters.segment] : ['All']));
 
     prods.forEach(p => {
-        const shares = prodRegionMap[p.Product_ID] || catSharesDefault[p.category] || { East: 0.25, North: 0.25, South: 0.25, West: 0.25 };
+        const rp = D.region_by_product && D.region_by_product[p.Product_ID];
         regions.forEach(r => {
-            regionSalesMap[r] += p.total_sales * shares[r] * scaleOther;
-            regionRevMap[r] += p.total_revenue * shares[r] * scaleOther;
+            if (rp && rp[r]) {
+                regionSalesMap[r] += rp[r].sales * scaleOther;
+                regionRevMap[r] += rp[r].revenue * scaleOther;
+            }
         });
     });
 
-    if (filters.region && filters.region !== 'All') {
+    const selectedRegions = filters.regions && filters.regions.length && !filters.regions.includes('All')
+        ? filters.regions
+        : (filters.region && filters.region !== 'All' ? [filters.region] : null);
+
+    if (selectedRegions) {
         regions.forEach(r => {
-            if (r !== filters.region) {
+            if (!selectedRegions.includes(r)) {
                 regionSalesMap[r] = 0;
                 regionRevMap[r] = 0;
             }
@@ -185,7 +127,7 @@ function computePriceBands(prods, filters) {
     const revenueArr = [];
 
     bandsDef.forEach(b => {
-        let matching = prods.filter(p => p.avg_price > b.min && p.avg_price <= b.max);
+        const matching = prods.filter(p => p.avg_price > b.min && p.avg_price <= b.max);
         const totalRev = matching.reduce((sum, p) => sum + p.total_revenue, 0);
         const totalSales = matching.reduce((sum, p) => sum + p.total_sales, 0);
         const avgSales = matching.length ? (totalSales / matching.length) / 24 : 0;

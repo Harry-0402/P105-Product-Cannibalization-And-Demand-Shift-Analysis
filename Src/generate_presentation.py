@@ -51,7 +51,7 @@ def create_presentation(output_path):
     tf.text = "Product 6 experienced severe cannibalization after the new launches:"
     
     p = tf.add_paragraph()
-    p.text = "Sales Volume Drop: Decreased by 19.3% in the post-launch period."
+    p.text = "Sales Volume Drop: Decreased by 38.62% in average sales per record in the post-launch period."
     p.level = 1
     
     p = tf.add_paragraph()

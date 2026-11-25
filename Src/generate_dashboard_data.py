@@ -75,9 +75,10 @@ monthly = df.groupby('Year_Month').agg(
     sales=('Sales', 'sum'),
     revenue=('Revenue', 'sum'),
     avg_price=('Price', 'mean'),
-    records=('Sales', 'count')
+    records=('Sales', 'count'),
+    spend=('Marketing_Spend', 'sum')
 ).reset_index()
-monthly.columns = ['month', 'sales', 'revenue', 'avg_price', 'records']
+monthly.columns = ['month', 'sales', 'revenue', 'avg_price', 'records', 'spend']
 monthly['month_dt'] = pd.to_datetime(monthly['month'])
 monthly.sort_values('month_dt', inplace=True)
 
@@ -85,6 +86,7 @@ data['monthly_trends'] = {
     'months':   monthly['month'].tolist(),
     'sales':    monthly['sales'].tolist(),
     'revenue':  [round(x, 0) for x in monthly['revenue'].tolist()],
+    'spend':    [round(x, 0) for x in monthly['spend'].tolist()],
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -101,16 +103,57 @@ prod = df.groupby('Product_ID').agg(
     group=('Product_Group', 'first')
 ).round(2).reset_index()
 
-prod_before = before.groupby('Product_ID')['Sales'].mean().rename('avg_before')
-prod_after  = after.groupby('Product_ID')['Sales'].mean().rename('avg_after')
-prod_growth = pd.concat([prod_before, prod_after], axis=1).fillna(0)
+prod_before_avg = before.groupby('Product_ID')['Sales'].mean().rename('avg_before')
+prod_after_avg  = after.groupby('Product_ID')['Sales'].mean().rename('avg_after')
+prod_before_sum = before.groupby('Product_ID')['Sales'].sum().rename('sales_before')
+prod_after_sum  = after.groupby('Product_ID')['Sales'].sum().rename('sales_after')
+prod_rev_before = before.groupby('Product_ID')['Revenue'].sum().round(0).rename('rev_before')
+prod_rev_after  = after.groupby('Product_ID')['Revenue'].sum().round(0).rename('rev_after')
+prod_stock      = (df.groupby('Product_ID')['Stock_Available'].mean() * 100).round(1).rename('stock_avail')
+prod_mkt_spend  = df.groupby('Product_ID')['Marketing_Spend'].sum().round(2).rename('mkt_spend')
+prod_oos_count  = df[df['Stock_Available'] == 0].groupby('Product_ID').size().rename('oos_count')
+
+prod_growth = pd.concat([
+    prod_before_avg, prod_after_avg,
+    prod_before_sum, prod_after_sum,
+    prod_rev_before, prod_rev_after,
+    prod_stock, prod_mkt_spend, prod_oos_count
+], axis=1).fillna(0)
+prod_growth['avg_before'] = prod_growth['avg_before'].round(2)
+prod_growth['avg_after'] = prod_growth['avg_after'].round(2)
+prod_growth['sales_before'] = prod_growth['sales_before'].astype(int)
+prod_growth['sales_after'] = prod_growth['sales_after'].astype(int)
+prod_growth['oos_count'] = prod_growth['oos_count'].astype(int)
 prod_growth['growth_pct'] = ((prod_growth['avg_after'] - prod_growth['avg_before']) / prod_growth['avg_before'].replace(0, np.nan) * 100).round(2).fillna(0)
 
-prod = prod.merge(prod_growth[['avg_before', 'avg_after', 'growth_pct']], on='Product_ID', how='left')
+prod = prod.merge(prod_growth.reset_index(), on='Product_ID', how='left')
 prod['is_launched'] = prod['Product_ID'].isin(LAUNCHED_PRODUCTS)
+
+def _assign_price_band(p):
+    if p <= 50: return 'Budget (0-50)'
+    if p <= 100: return 'Mid (51-100)'
+    if p <= 200: return 'Premium (101-200)'
+    return 'Luxury (201+)'
+
+prod['price_band'] = prod['avg_price'].apply(_assign_price_band)
 prod.sort_values('total_revenue', ascending=False, inplace=True)
 
 data['products'] = prod.to_dict(orient='records')
+
+# Monthly breakdown per product (aligned to data['monthly_trends']['months'])
+all_months = data['monthly_trends']['months']
+pm_agg = df.groupby(['Product_ID', 'Year_Month']).agg(
+    sales=('Sales', 'sum'),
+    revenue=('Revenue', 'sum')
+).reset_index()
+monthly_by_product = {}
+for pid in prod['Product_ID']:
+    sub = pm_agg[pm_agg['Product_ID'] == pid].set_index('Year_Month')
+    monthly_by_product[pid] = {
+        'sales': [int(sub.loc[m, 'sales']) if m in sub.index else 0 for m in all_months],
+        'revenue': [round(float(sub.loc[m, 'revenue']), 0) if m in sub.index else 0 for m in all_months]
+    }
+data['monthly_by_product'] = monthly_by_product
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 4. Category Comparison
@@ -188,7 +231,35 @@ data['regions'] = region_data.to_dict(orient='records')
 # Region before/after
 reg_period = df.groupby(['Region', 'Period_Flag'])['Sales'].mean().unstack().round(2).reset_index()
 reg_period.columns = ['region', 'after', 'before']
+reg_period_sum = df.groupby(['Region', 'Period_Flag'])['Sales'].sum().unstack().fillna(0).astype(int).reset_index()
+reg_period_sum.columns = ['region', 'total_after', 'total_before']
+reg_period = reg_period.merge(reg_period_sum, on='region', how='left')
 data['region_period'] = reg_period.to_dict(orient='records')
+
+# Region breakdown per product
+reg_prod_agg = df.groupby(['Product_ID', 'Region']).agg(
+    sales=('Sales', 'sum'),
+    revenue=('Revenue', 'sum'),
+    customers=('Customer_ID', 'nunique')
+).reset_index()
+reg_prod_before = before.groupby(['Product_ID', 'Region'])['Sales'].sum().rename('sales_before')
+reg_prod_after = after.groupby(['Product_ID', 'Region'])['Sales'].sum().rename('sales_after')
+reg_prod_agg = reg_prod_agg.merge(reg_prod_before, on=['Product_ID', 'Region'], how='left')
+reg_prod_agg = reg_prod_agg.merge(reg_prod_after, on=['Product_ID', 'Region'], how='left').fillna(0)
+
+region_by_product = {}
+for pid in prod['Product_ID']:
+    sub = reg_prod_agg[reg_prod_agg['Product_ID'] == pid].set_index('Region')
+    region_by_product[pid] = {
+        r: {
+            'sales': int(sub.loc[r, 'sales']) if r in sub.index else 0,
+            'revenue': round(float(sub.loc[r, 'revenue']), 0) if r in sub.index else 0,
+            'customers': int(sub.loc[r, 'customers']) if r in sub.index else 0,
+            'sales_before': int(sub.loc[r, 'sales_before']) if r in sub.index else 0,
+            'sales_after': int(sub.loc[r, 'sales_after']) if r in sub.index else 0
+        } for r in ['East', 'North', 'South', 'West']
+    }
+data['region_by_product'] = region_by_product
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 7. Marketing Data
@@ -234,6 +305,14 @@ oos_by_prod = df[df['Stock_Available']==0].groupby('Product_ID').size().sort_val
 oos_by_prod.columns = ['product', 'oos_count']
 data['inventory']['oos_by_product'] = oos_by_prod.to_dict(orient='records')
 
+oos_by_cat = df.groupby('Category').agg(
+    oos_count=('Stock_Available', lambda s: int((s == 0).sum())),
+    total_records=('Stock_Available', 'count')
+).reset_index()
+oos_by_cat['oos_rate_pct'] = (oos_by_cat['oos_count'] / oos_by_cat['total_records'] * 100).round(2)
+oos_by_cat.columns = ['category', 'oos_count', 'total_records', 'oos_rate_pct']
+data['inventory']['oos_by_category'] = oos_by_cat.sort_values('oos_rate_pct', ascending=False).to_dict(orient='records')
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # 10. Product Group Sales Trends
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -277,6 +356,100 @@ data['recommendations'] = [
 # ═══════════════════════════════════════════════════════════════════════════════
 # SAVE
 # ═══════════════════════════════════════════════════════════════════════════════
+
+
+# 12. Advanced Chart Datasets (Histogram, Boxplot, Heatmaps, Waterfall)
+hist_bins = [0, 10, 20, 30, 40, 50, 60, 75, 100, 150]
+bin_labels = ['0-10', '11-20', '21-30', '31-40', '41-50', '51-60', '61-75', '76-100', '101+']
+pre_hist, _ = np.histogram(before['Sales'].clip(upper=149), bins=hist_bins)
+post_hist, _ = np.histogram(after['Sales'].clip(upper=149), bins=hist_bins)
+pre_pct = [round(float(x / len(before) * 100), 2) for x in pre_hist]
+post_pct = [round(float(x / len(after) * 100), 2) for x in post_hist]
+data['sales_histogram'] = {
+    'labels': bin_labels,
+    'pre_pct': pre_pct,
+    'post_pct': post_pct,
+    'pre_counts': [int(x) for x in pre_hist],
+    'post_counts': [int(x) for x in post_hist]
+}
+
+price_boxplot = []
+for c in categories:
+    s = df[df['Category'] == c]['Price']
+    q1, med, q3 = np.percentile(s, [25, 50, 75])
+    iqr = q3 - q1
+    w_min = float(max(s.min(), q1 - 1.5 * iqr))
+    w_max = float(min(s.max(), q3 + 1.5 * iqr))
+    price_boxplot.append({
+        'category': c,
+        'min': round(w_min, 2),
+        'q1': round(float(q1), 2),
+        'median': round(float(med), 2),
+        'q3': round(float(q3), 2),
+        'max': round(w_max, 2),
+        'mean': round(float(s.mean()), 2)
+    })
+data['price_boxplot'] = price_boxplot
+
+reg_list = ['East', 'North', 'South', 'West']
+cat_reg_rev = []
+cat_reg_sales = []
+for c in categories:
+    row_r = []
+    row_s = []
+    for r in reg_list:
+        sub = df[(df['Category'] == c) & (df['Region'] == r)]
+        row_r.append(round(float(sub['Revenue'].sum()), 0))
+        row_s.append(int(sub['Sales'].sum()))
+    cat_reg_rev.append(row_r)
+    cat_reg_sales.append(row_s)
+data['category_region_matrix'] = {
+    'categories': categories,
+    'regions': reg_list,
+    'revenue': cat_reg_rev,
+    'sales': cat_reg_sales
+}
+
+all_m = data['monthly_trends']['months']
+heatmap_rows = []
+for p in data['products']:
+    pid = p['Product_ID']
+    pm_sales = data['monthly_by_product'][pid]['sales']
+    pre_vals = [pm_sales[i] for i, m in enumerate(all_m) if m < '2024-06']
+    pre_avg = (sum(pre_vals) / len(pre_vals)) if pre_vals and sum(pre_vals) > 0 else 0
+    pct_row = []
+    for val in pm_sales:
+        if pre_avg > 0:
+            pct_row.append(round((val - pre_avg) / pre_avg * 100, 1))
+        else:
+            pct_row.append(100.0 if val > 0 else 0.0)
+    heatmap_rows.append({
+        'product': pid,
+        'category': p['category'],
+        'is_launched': p['is_launched'],
+        'pct_change': pct_row
+    })
+data['cannibalization']['product_month_heatmap'] = {
+    'months': all_m,
+    'rows': heatmap_rows
+}
+
+pre_rev_mo = float(before['Revenue'].sum()) / months_before
+post_rev_mo = float(after['Revenue'].sum()) / months_after
+p45_rev_mo = float(after[after['Product_ID'].isin(['P4', 'P5'])]['Revenue'].sum()) / months_after
+p123_rev_mo = float(after[after['Product_ID'].isin(['P1', 'P2', 'P3'])]['Revenue'].sum()) / months_after
+p6_pre_mo = float(before[before['Product_ID'] == 'P6']['Revenue'].sum()) / months_before
+p6_post_mo = float(after[after['Product_ID'] == 'P6']['Revenue'].sum()) / months_after
+p6_delta_mo = p6_post_mo - p6_pre_mo
+other_delta_mo = (post_rev_mo - pre_rev_mo) - (p45_rev_mo + p123_rev_mo + p6_delta_mo)
+data['revenue_waterfall'] = {
+    'pre_avg_rev': round(pre_rev_mo, 0),
+    'p4p5_gain': round(p45_rev_mo, 0),
+    'p123_gain': round(p123_rev_mo, 0),
+    'p6_loss': round(p6_delta_mo, 0),
+    'other_shift': round(other_delta_mo, 0),
+    'post_avg_rev': round(post_rev_mo, 0)
+}
 
 # Convert numpy types for JSON
 def convert(obj):

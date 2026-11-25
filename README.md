@@ -38,7 +38,7 @@ The core analysis was conducted in Python via Jupyter Notebooks, structured into
 5. **Cannibalization Analysis (Core)**: 
    - Identified the specific cannibalization of **Product P6** by the newly launched **Products P4 & P5**.
    - Proved that 14.9% of P6's historical customers actively migrated to the new products.
-6. **Customer, Pricing & Inventory Analysis**: Analyzed how the average selling price drop (₹130.54) impacted overall marketing ROI (1.28x).
+6. **Customer, Pricing & Inventory Analysis**: Analyzed how the average selling price drop (₹131.92) impacted overall marketing ROI (1.29x).
 7. **KPIs & Business Recommendations**: Formulated strategic interventions to recover high-margin sales.
 
 ---
@@ -48,8 +48,34 @@ The core analysis was conducted in Python via Jupyter Notebooks, structured into
 The analysis uncovered a hidden profitability leak disguised as growth:
 * **Cannibalization Rate**: **18.3%** of the new products' sales volume was cannibalized directly from the legacy product (P6).
 * **Customer Migration**: **14.9%** of P6's loyal customer base abandoned it to purchase the cheaper new products.
-* **Margin Impact**: Because the new products were priced lower, the overall total revenue of the portfolio actually experienced a **-8.5% growth contraction**, despite high sales volumes of the new launch.
+* **Margin Impact**: Because the new products were priced lower, the overall total revenue of the portfolio actually experienced a **-9.83% revenue growth contraction**, despite high sales volumes of the new launch.
 * **Action Taken**: Recommended a geographic bundling strategy and targeted promotions for the legacy product, projected to recover 8% of the lost revenue while maintaining the new product's acquired market share.
+
+---
+
+---
+
+## 🖼️ Dashboard Gallery (All 10 Analytics Views)
+
+| Executive Overview | Sales Performance |
+| :---: | :---: |
+| ![Executive Overview](Images/executive.png) | ![Sales Performance](Images/sales.png) |
+
+| Product Performance | Cannibalization Analysis |
+| :---: | :---: |
+| ![Product Performance](Images/products.png) | ![Cannibalization Analysis](Images/cannibalization.png) |
+
+| Customer Insights | Pricing Analysis |
+| :---: | :---: |
+| ![Customer Insights](Images/customers.png) | ![Pricing Analysis](Images/pricing.png) |
+
+| Marketing Analysis | Inventory Analysis |
+| :---: | :---: |
+| ![Marketing Analysis](Images/marketing.png) | ![Inventory Analysis](Images/inventory.png) |
+
+| Regional Analysis | Strategic Recommendations |
+| :---: | :---: |
+| ![Regional Analysis](Images/regional.png) | ![Strategic Recommendations](Images/recommendations.png) |
 
 ---
 

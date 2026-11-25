@@ -11,6 +11,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@sgratzl/chartjs-chart-boxplot@4.4.4/build/index.umd.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -52,39 +54,26 @@
         </ul>
 
         <div class="sidebar-footer">
-            <button id="themeToggle" class="theme-toggle-btn">
-                <i data-lucide="moon" class="theme-icon"></i>
-                <span class="theme-text">Dark Mode</span>
-            </button>
-            <div class="sidebar-credits">By Harish Chavan • v1.0</div>
+            <div class="sidebar-action-dock" id="sidebarActionDock">
+                <button id="themeToggle" class="dock-btn theme-toggle-btn is-expanded" title="Toggle Theme">
+                    <i data-lucide="moon" class="theme-icon"></i>
+                    <span class="dock-label theme-text">Dark Mode</span>
+                </button>
+                <a id="sidebarRepoBtn" href="https://github.com/Harry-0402/P105-Product-Cannibalization-" target="_blank" rel="noopener" class="dock-btn" title="GitHub Repository">
+                    <i data-lucide="git-branch"></i>
+                    <span class="dock-label">GitHub Repo</span>
+                </a>
+                <button id="sidebarCreatorBtn" class="dock-btn" title="Creator Profile" onclick="switchTab('creator')">
+                    <i data-lucide="user"></i>
+                    <span class="dock-label">Profile</span>
+                </button>
+            </div>
+            <div class="sidebar-credits">By Harish Chavan &bull; v1.0</div>
         </div>
     </nav>
 
     <!-- Main Content -->
     <main class="main-content" id="mainContent">
-
-        <!-- Top Header Navigation Bar -->
-        <div class="top-header-bar">
-            <div class="header-search-container">
-                <i data-lucide="search" class="header-search-icon"></i>
-                <input type="text" id="filter-search" placeholder="Search for product, category, or group..." />
-            </div>
-            <div class="header-right-actions">
-                <button class="icon-btn header-doc-btn" title="Project Documents & Manual"
-                    onclick="openDocModal(event)">
-                    <i data-lucide="file-text"></i>
-                </button>
-                <div class="user-profile-pill creator-header-pill" onclick="switchTab('creator')"
-                    title="View Creator Profile">
-                    <div class="avatar-circle creator-avatar">HC</div>
-                    <div class="user-info-text">
-                        <span class="user-name">Harish Chavan</span>
-                        <span class="user-role">Creator & Analyst</span>
-                    </div>
-                    <i data-lucide="chevron-right" class="user-chevron"></i>
-                </div>
-            </div>
-        </div>
 
         <!-- Interactive Filter Control Hub (3-Section Layout Matching Mockup) -->
         <div class="filter-control-hub" id="filterControlHub">
@@ -169,9 +158,10 @@
                             <div class="slicer-badge green"><i data-lucide="indian-rupee"></i></div>
                             <select id="filter-price" class="slicer-select">
                                 <option value="All">All Prices</option>
-                                <option value="Low">Low (&lt; &#8377;1100)</option>
-                                <option value="Medium">Medium (&#8377;1100 - &#8377;1200)</option>
-                                <option value="High">High (&gt; &#8377;1200)</option>
+                                <option value="Budget (0-50)">Budget (&#8377;0 - &#8377;50)</option>
+                                <option value="Mid (51-100)">Mid (&#8377;51 - &#8377;100)</option>
+                                <option value="Premium (101-200)">Premium (&#8377;101 - &#8377;200)</option>
+                                <option value="Luxury (201+)">Luxury (&gt; &#8377;200)</option>
                             </select>
                             <div class="slicer-action-wrapper">
                                 <i data-lucide="chevron-down" class="slicer-arrow"></i>
@@ -206,18 +196,21 @@
 
             <div class="chart-row">
                 <div class="chart-card">
-                    <h3>Sales by Category</h3>
+                    <h3 id="title-exec-category">Sales by Category</h3>
                     <canvas id="chart-exec-category"></canvas>
                 </div>
                 <div class="chart-card">
-                    <h3>Sales by Region</h3>
+                    <h3 id="title-exec-region">Sales by Region</h3>
                     <canvas id="chart-exec-region"></canvas>
                 </div>
             </div>
+
         </section>
 
         <!-- ═══════════ PAGE 2: SALES PERFORMANCE ═══════════ -->
         <section class="page" id="page-sales">
+
+            <div class="kpi-grid small" id="sales-kpis"></div>
 
             <div class="chart-row">
                 <div class="chart-card wide">
@@ -228,11 +221,11 @@
 
             <div class="chart-row">
                 <div class="chart-card">
-                    <h3>Sales by Category — Before vs After Launch</h3>
+                    <h3 id="title-sales-cat-ba">Sales by Category — Before vs After Launch</h3>
                     <canvas id="chart-sales-cat-ba"></canvas>
                 </div>
                 <div class="chart-card">
-                    <h3>Sales by Region — Before vs After Launch</h3>
+                    <h3 id="title-sales-reg-ba">Sales by Region — Before vs After Launch</h3>
                     <canvas id="chart-sales-reg-ba"></canvas>
                 </div>
             </div>
@@ -243,10 +236,13 @@
                     <canvas id="chart-sales-groups"></canvas>
                 </div>
             </div>
+
         </section>
 
         <!-- ═══════════ PAGE 3: PRODUCT PERFORMANCE ═══════════ -->
         <section class="page" id="page-products">
+
+            <div class="kpi-grid small" id="prod-kpis"></div>
 
             <div class="chart-row">
                 <div class="chart-card">
@@ -293,6 +289,13 @@
                     <canvas id="chart-cann-change"></canvas>
                 </div>
             </div>
+
+            <div class="chart-row">
+                <div class="chart-card wide">
+                    <h3>Product &times; Month Demand Shift Heatmap (% vs. Pre-Launch Baseline)</h3>
+                    <div id="cann-heatmap-wrapper" class="heatmap-wrapper"></div>
+                </div>
+            </div>
         </section>
 
         <!-- ═══════════ PAGE 5: CUSTOMER INSIGHTS ═══════════ -->
@@ -302,7 +305,7 @@
 
             <div class="chart-row">
                 <div class="chart-card">
-                    <h3>Customers by Region</h3>
+                    <h3 id="title-cust-region">Customers by Region</h3>
                     <canvas id="chart-cust-region"></canvas>
                 </div>
                 <div class="chart-card">
@@ -315,27 +318,36 @@
         <!-- ═══════════ PAGE 6: PRICING ANALYSIS ═══════════ -->
         <section class="page" id="page-pricing">
 
+            <div class="kpi-grid small" id="pricing-kpis"></div>
+
             <div class="chart-row">
                 <div class="chart-card">
                     <h3>Average Price by Product</h3>
                     <canvas id="chart-price-product"></canvas>
                 </div>
                 <div class="chart-card">
-                    <h3>Sales by Price Band</h3>
-                    <canvas id="chart-price-band"></canvas>
+                    <h3>Price Distribution by Category (Box Plot)</h3>
+                    <canvas id="chart-price-boxplot"></canvas>
                 </div>
             </div>
 
             <div class="chart-row">
-                <div class="chart-card wide">
-                    <h3>Revenue by Price Band</h3>
+                <div class="chart-card">
+                    <h3 id="title-price-band">Sales by Price Band</h3>
+                    <canvas id="chart-price-band"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3 id="title-price-revenue">Revenue by Price Band</h3>
                     <canvas id="chart-price-revenue"></canvas>
                 </div>
             </div>
+
         </section>
 
         <!-- ═══════════ PAGE 7: MARKETING ANALYSIS ═══════════ -->
         <section class="page" id="page-marketing">
+
+            <div class="kpi-grid small" id="mkt-kpis"></div>
 
             <div class="chart-row">
                 <div class="chart-card wide">
@@ -343,10 +355,23 @@
                     <canvas id="chart-mkt-roi"></canvas>
                 </div>
             </div>
+
+            <div class="chart-row">
+                <div class="chart-card">
+                    <h3>Marketing Spend vs. Revenue by Product</h3>
+                    <canvas id="chart-mkt-spend-rev"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Monthly Marketing Spend vs. ROI</h3>
+                    <canvas id="chart-mkt-trend"></canvas>
+                </div>
+            </div>
         </section>
 
         <!-- ═══════════ PAGE 8: INVENTORY ANALYSIS ═══════════ -->
         <section class="page" id="page-inventory">
+
+            <div class="kpi-grid small" id="inv-kpis"></div>
 
             <div class="chart-row">
                 <div class="chart-card wide">
@@ -356,9 +381,13 @@
             </div>
 
             <div class="chart-row">
-                <div class="chart-card wide">
+                <div class="chart-card">
                     <h3>Out-of-Stock Records by Product</h3>
                     <canvas id="chart-inv-oos"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Out-of-Stock Rate % by Category</h3>
+                    <canvas id="chart-inv-cat-oos"></canvas>
                 </div>
             </div>
         </section>
@@ -370,25 +399,46 @@
 
             <div class="chart-row">
                 <div class="chart-card">
-                    <h3>Revenue by Region</h3>
+                    <h3 id="title-reg-revenue">Revenue by Region</h3>
                     <canvas id="chart-reg-revenue"></canvas>
                 </div>
                 <div class="chart-card">
-                    <h3>Sales — Before vs After by Region</h3>
+                    <h3 id="title-reg-ba">Sales — Before vs After by Region</h3>
                     <canvas id="chart-reg-ba"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-row">
+                <div class="chart-card wide">
+                    <h3>Category &times; Region Revenue Matrix Heatmap</h3>
+                    <div id="reg-heatmap-wrapper" class="heatmap-wrapper"></div>
                 </div>
             </div>
         </section>
 
         <!-- ═══════════ PAGE 10: RECOMMENDATIONS ═══════════ -->
         <section class="page" id="page-recommendations">
+            <div class="rec-hero-card">
+                <div class="rec-hero-top">
+                    <div>
+                        <h1 class="rec-hero-title">Strategic Recommendations</h1>
+                        <p class="rec-hero-sub">Prioritized action plan to mitigate P6 cannibalization, retain customers, and maximize net new revenue.</p>
+                    </div>
+                    <div class="rec-filter-pills" id="recFilterPills">
+                        <button class="rec-pill active" data-priority="All">All (8)</button>
+                        <button class="rec-pill high" data-priority="High">High Priority</button>
+                        <button class="rec-pill medium" data-priority="Medium">Medium Priority</button>
+                        <button class="rec-pill low" data-priority="Low">Low Priority</button>
+                    </div>
+                </div>
+                <div class="rec-stats-strip" id="recStatsStrip"></div>
+            </div>
 
             <div class="recommendations-grid" id="rec-grid">
                 <!-- Injected by JS -->
             </div>
         </section>
 
-        <!-- ═══════════ DOCUMENT PREVIEW MODAL ═══════════ -->
         <div class="doc-modal-overlay" id="docModal">
             <div class="doc-modal-content">
                 <div class="doc-modal-header">
@@ -419,7 +469,7 @@
                     </div>
                     <div class="doc-viewer" style="display: flex; flex-direction: column;">
                         <div
-                            style="background: rgba(99, 102, 241, 0.1); color: var(--text-primary); padding: 10px 16px; font-size: 13.5px; text-align: center; border-bottom: 1px solid var(--border-color);">
+                            style="background: rgba(99, 102, 241, 0.1); color: var(--text-primary); padding: 10px 16px; font-size: 13.5px; text-align: center; border-bottom: 1px solid var(--border);">
                             ⏳ <strong>Note:</strong> The document preview may take a few seconds to load from GitHub. If
                             it stays blank, <a href="#" id="docRefreshBtn"
                                 style="color: var(--accent-blue); font-weight: 600; text-decoration: underline; margin-left: 4px;">click
@@ -434,69 +484,152 @@
         <!-- ═══════════ PAGE 11: CREATOR PROFILE ═══════════ -->
         <section class="page" id="page-creator">
 
-            <div class="kpi-card creator-profile-banner">
-                <div class="creator-profile-banner-inner">
-                    <div class="creator-profile-info">
-                        <img src="profile.jpg" alt="Harish Chavan" class="creator-profile-img">
-                        <div class="creator-profile-text-wrap">
-                            <h2 class="creator-name">
-                                Harish Chavan <span
-                                    style="font-size: 14px; font-weight: normal; color: var(--text-muted);">(He/Him)</span>
-                            </h2>
-                            <div class="creator-tagline">
-                                Inspired by Hydrogen, Driven by Data | MBA Business Analytics | Power BI | Python | Data
-                                Management | Strategic Thinking
+            <!-- Hero Profile Card -->
+            <div class="creator-hero-card">
+                <div class="creator-hero-glow"></div>
+                <div class="creator-hero-body">
+                    <div class="creator-hero-left">
+                        <div class="creator-avatar-wrap">
+                            <img src="profile.jpg" alt="Harish R Chavan" class="creator-profile-img">
+                            <span class="creator-status-dot" title="Open to opportunities"></span>
+                        </div>
+                        <div class="creator-hero-details">
+                            <div class="creator-title-row">
+                                <h1 class="creator-name">Harish R Chavan</h1>
+                                <span class="creator-pronouns">He/Him</span>
                             </div>
-                            <div class="creator-stats">
-                                <span>📍 Nashik, Maharashtra</span>
-                                <span>🎓 Sandip University</span>
-                                <span>🤝 500+ connections</span>
+                            <p class="creator-tagline">
+                                Turning Data Into Decisions &bull; MBA Business Analytics &bull; SQL &amp; Python Certified &bull; Power BI &amp; DAX
+                            </p>
+                            <div class="creator-meta-chips">
+                                <span class="creator-meta-chip"><i data-lucide="map-pin"></i> Nashik, Maharashtra</span>
+                                <span class="creator-meta-chip"><i data-lucide="graduation-cap"></i> Sandip University</span>
+                                <span class="creator-meta-chip"><i data-lucide="users"></i> 500+ Connections</span>
                             </div>
                         </div>
                     </div>
-                    <div class="opentowork-badge">
-                        <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px; letter-spacing: 0.5px;">
-                            #OPENTOWORK</div>
-                        <div style="font-weight: 500; font-size: 12px; opacity: 0.9;">Business Analyst & Data Analyst
+                    <div class="creator-hero-right">
+                        <div class="opentowork-badge">
+                            <span class="opentowork-pulse"></span>
+                            <div>
+                                <div class="opentowork-title">#OPENTOWORK</div>
+                                <div class="opentowork-role">Business &amp; Data Analyst</div>
+                            </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Portfolio Highlights Strip -->
+                <div class="creator-stats-strip">
+                    <div class="creator-stat-item">
+                        <span class="creator-stat-val">7+</span>
+                        <span class="creator-stat-lbl">Projects Completed</span>
+                    </div>
+                    <div class="creator-stat-item">
+                        <span class="creator-stat-val">14+</span>
+                        <span class="creator-stat-lbl">Insights Generated</span>
+                    </div>
+                    <div class="creator-stat-item">
+                        <span class="creator-stat-val">25+</span>
+                        <span class="creator-stat-lbl">Tools &amp; Technologies</span>
+                    </div>
+                    <div class="creator-stat-item">
+                        <span class="creator-stat-val">8+</span>
+                        <span class="creator-stat-lbl">Certifications</span>
                     </div>
                 </div>
             </div>
 
-            <div class="creator-profile-container" style="display: flex; gap: 24px; flex-wrap: wrap; margin-top: 24px;">
-                <div class="kpi-card blue" style="flex: 1; min-width: 250px; text-align: center; padding: 30px;">
-                    <div style="font-size: 40px; margin-bottom: 15px;">🌐</div>
-                    <h3 style="margin-bottom: 10px; color: var(--text-primary);">Portfolio Website</h3>
-                    <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 13px;">View my complete
-                        portfolio of data projects and creations.</p>
-                    <a href="#" target="_blank" class="header-btn" style="display: inline-block;">Visit Portfolio</a>
+            <!-- Bento About & Skills Row -->
+            <div class="creator-about-grid">
+                <div class="creator-info-card">
+                    <div class="creator-info-header">
+                        <div class="creator-info-icon"><i data-lucide="compass"></i></div>
+                        <div>
+                            <h3>About &amp; Problem-Solving Journey</h3>
+                            <span class="creator-info-sub">How I turn complex data into clear business decisions</span>
+                        </div>
+                    </div>
+                    <p class="creator-about-text">
+                        Business Analytics student passionate about transforming scattered commercial data into clear, actionable strategy. Built the P105 Product Cannibalization &amp; Demand Shift Analysis suite across 1.37M+ transactions to isolate an 18.3% product line cannibalization rate and deliver executive-ready intelligence.
+                    </p>
+                    <div class="creator-steps-row">
+                        <div class="creator-step-pill"><span class="step-num">01</span> Listen &amp; Align</div>
+                        <div class="creator-step-pill"><span class="step-num">02</span> Collect &amp; Clean</div>
+                        <div class="creator-step-pill"><span class="step-num">03</span> Find Profit Drivers</div>
+                        <div class="creator-step-pill"><span class="step-num">04</span> Visual Answers</div>
+                    </div>
                 </div>
 
-                <div class="kpi-card teal" style="flex: 1; min-width: 250px; text-align: center; padding: 30px;">
-                    <div style="font-size: 40px; margin-bottom: 15px;">💼</div>
-                    <h3 style="margin-bottom: 10px; color: var(--text-primary);">LinkedIn</h3>
-                    <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 13px;">Connect with me
-                        professionally and follow my latest updates.</p>
-                    <a href="https://www.linkedin.com/in/harish-chavan-a4248738b" target="_blank" class="header-btn"
-                        style="display: inline-block;">Connect on LinkedIn</a>
+                <div class="creator-info-card">
+                    <div class="creator-info-header">
+                        <div class="creator-info-icon teal"><i data-lucide="layers"></i></div>
+                        <div>
+                            <h3>Technical Stack &amp; Competencies</h3>
+                            <span class="creator-info-sub">Core analytical &amp; BI capabilities</span>
+                        </div>
+                    </div>
+                    <div class="creator-skills-wrap">
+                        <span class="creator-skill-pill">Python</span>
+                        <span class="creator-skill-pill">SQL</span>
+                        <span class="creator-skill-pill">Power BI &amp; DAX</span>
+                        <span class="creator-skill-pill">Tableau</span>
+                        <span class="creator-skill-pill">Excel</span>
+                        <span class="creator-skill-pill">Predictive Analytics</span>
+                        <span class="creator-skill-pill">Data Modeling</span>
+                        <span class="creator-skill-pill">Executive Dashboards</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Connect & Links Grid -->
+            <div class="creator-links-grid">
+                <div class="creator-link-card accent-blue">
+                    <div class="creator-link-top">
+                        <div class="creator-link-icon blue"><i data-lucide="globe"></i></div>
+                        <h3>Portfolio Website</h3>
+                        <p>Explore my end-to-end analytics projects, case studies, certifications, and problem-solving journey.</p>
+                    </div>
+                    <a href="https://harish-chavan-portfolio.onrender.com" target="_blank" rel="noopener" class="creator-cta-btn blue">
+                        <span>Visit Portfolio</span>
+                        <i data-lucide="arrow-up-right"></i>
+                    </a>
                 </div>
 
-                <div class="kpi-card purple" style="flex: 1; min-width: 250px; text-align: center; padding: 30px;">
-                    <div style="font-size: 40px; margin-bottom: 15px;">🐙</div>
-                    <h3 style="margin-bottom: 10px; color: var(--text-primary);">GitHub</h3>
-                    <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 13px;">Explore my open
-                        source code, repositories, and technical work.</p>
-                    <a href="https://github.com/Harry-0402" target="_blank" class="header-btn"
-                        style="display: inline-block;">Follow on GitHub</a>
+                <div class="creator-link-card accent-teal">
+                    <div class="creator-link-top">
+                        <div class="creator-link-icon teal"><i data-lucide="briefcase"></i></div>
+                        <h3>LinkedIn</h3>
+                        <p>Connect with me professionally, view my credentials, and follow my latest analytics updates.</p>
+                    </div>
+                    <a href="https://www.linkedin.com/in/harish-chavan-a4248738b" target="_blank" rel="noopener" class="creator-cta-btn teal">
+                        <span>Connect on LinkedIn</span>
+                        <i data-lucide="arrow-up-right"></i>
+                    </a>
                 </div>
 
-                <div class="kpi-card orange" style="flex: 1; min-width: 250px; text-align: center; padding: 30px;">
-                    <div style="font-size: 40px; margin-bottom: 15px;">📧</div>
-                    <h3 style="margin-bottom: 10px; color: var(--text-primary);">Email</h3>
-                    <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 13px;">Reach out for
-                        collaborations, questions, or opportunities.</p>
-                    <a href="mailto:harish@example.com" target="_blank" class="header-btn"
-                        style="display: inline-block;">Send an Email</a>
+                <div class="creator-link-card accent-purple">
+                    <div class="creator-link-top">
+                        <div class="creator-link-icon purple"><i data-lucide="code-2"></i></div>
+                        <h3>GitHub</h3>
+                        <p>Browse my open-source data analytics repositories, Python pipelines, and interactive dashboards.</p>
+                    </div>
+                    <a href="https://github.com/Harry-0402" target="_blank" rel="noopener" class="creator-cta-btn purple">
+                        <span>Follow on GitHub</span>
+                        <i data-lucide="arrow-up-right"></i>
+                    </a>
+                </div>
+
+                <div class="creator-link-card accent-amber">
+                    <div class="creator-link-top">
+                        <div class="creator-link-icon amber"><i data-lucide="mail"></i></div>
+                        <h3>Email</h3>
+                        <p>Reach out directly at hrchavan0402@gmail.com for analyst roles, collaborations, or inquiries.</p>
+                    </div>
+                    <a href="mailto:hrchavan0402@gmail.com" class="creator-cta-btn amber">
+                        <span>Send an Email</span>
+                        <i data-lucide="arrow-up-right"></i>
+                    </a>
                 </div>
             </div>
         </section>
